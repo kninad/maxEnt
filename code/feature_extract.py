@@ -10,6 +10,7 @@ filePath = '../data/Age50_DataExtract.csv'
 EST = 'JAMES-STEIN'
 K = 5
 data_arr = load_data(filePath)
+N = data_arr.shape[0]
 num_rand = data_arr.shape[1]
 
 
@@ -45,6 +46,7 @@ def discrete_Lmeasure(data_arr):
 # Specifically they are ith and jth columns in the data 2-d array
 # assuming 0-indexing
 def discrete_mu(data_arr, i , j):
+    
     N = data_arr.shape[0]
     set_xi = set(data_arr[:,i])
     set_yj = set(data_arr[:,j])
@@ -58,7 +60,7 @@ def discrete_mu(data_arr, i , j):
             low = max(0, n_i + n_j - N)
             high = min(n_i, n_j)
 
-            for n_ij in range(low, high+1):
+            for n_ij in range(low + 1, high):
                 P_nij = ((N - n_j) / (n_i - n_ij)) * (n_j / n_ij) * (N / n_i)
                 add_term = (n_ij/N) * np.log(n_ij * N / n_i * n_j) * P_nij
                 mu_sum += add_term
@@ -66,7 +68,7 @@ def discrete_mu(data_arr, i , j):
     return mu_sum
 
 
-def discrete_normalized_Lmeasure(data_arr, k):
+def discrete_normalized_Lmeasure(data_arr):
 
     indi_entropies = drv.entropy(data_arr.T, estimator=EST)
     num_rand = data_arr.shape[1]
@@ -90,7 +92,9 @@ def discrete_normalized_Lmeasure(data_arr, k):
             #I_ij = np.abs(I_ij)     # TEMP FIX
             W_ij = min(h_i, h_j)
             
+            # Potential error: I_ij may come out negative depending on the estiamtor   
             I_ij_hat = I_ij - mu_ij
+            I_ij_hat = np.abs(I_ij_hat)
             W_ij_hat = W_ij - mu_ij
 
             #inner_exp_term = (-1.0 * 2 * I_ij) / (1 - float(I_ij)/W_ij)
@@ -98,30 +102,26 @@ def discrete_normalized_Lmeasure(data_arr, k):
             L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
             I_mutinfo[key] = I_ij
 
-    sorted_list = sorted(L_measures.items(), key=operator.itemgetter(1), reverse=True)
-    topK_keys = [item[0] for item in sorted_list[:k]]
-    
-    
-    
     return L_measures, I_mutinfo, mu_vals
 
 
 
-def top_k(Lmeasure_dict, k):
-    sorted_list = sorted(Lmeasure_dict.items(), key=operator.itemgetter(1), reverse=True)
-    # each entry is a tuple of (key,value)
+def topK_feats(L_measure_dict, K):    
 
-    topK_keys = [item[0] for item in sorted_list[:k]]
+    sorted_list = sorted(L_measure_dict.items(), key=operator.itemgetter(1), reverse=True)
+    # each entry is a tuple of (key, value). We just want the keys
+    topK_keys = [item[0] for item in sorted_list[:K]]    
 
-    N = data_arr.shape[0]
-
+    val_dict = {}
     for k_tuple in topK_keys:
         i = k_tuple[0]
         j = k_tuple[1]    
         set_xi = set(data_arr[:,i])
         set_yj = set(data_arr[:,j])
-    
-        maxima = 0.0    # CHOOSING JUST A SINGLE PAIR
+
+        # CHOOSING JUST A SINGLE maxima PAIR of values
+        # Can update to include multiple later on
+        maxima = 0.0    
         for xi in set_xi:
             for yj in set_yj:
                 b_i = data_arr[:,i] == xi
@@ -130,18 +130,15 @@ def top_k(Lmeasure_dict, k):
                 n_j = sum(b_j)
                 n_ij = sum(b_i & b_j)
                 
-                
-                
-                low = max(0, n_i + n_j - N)
-                high = min(n_i, n_j)
+                # print(i,j, xi, yj, n_i, n_j, n_ij)
+                delta_ij = np.abs( (n_ij / N) * np.log((n_ij * N) / (n_i * n_j)) )
 
-                for n_ij in range(low, high+1):
-                    P_nij = ((N - n_j) / (n_i - n_ij)) * (n_j / n_ij) * (N / n_i)
-                    add_term = (n_ij/N) * np.log(n_ij * N / n_i * n_j) * P_nij
-                    mu_sum += add_term
+                if delta_ij > maxima :
+                    maxima = delta_ij
+                    val_dict[k_tuple] = (xi, yj)
 
+    return val_dict
 
+lms, _, _ = discrete_normalized_Lmeasure(data_arr)
+vd = topK_feats(lms, 5)
 
-    return topK_keys
-
-lms, mutinfos = discrete_Lmeasure(data_arr)
