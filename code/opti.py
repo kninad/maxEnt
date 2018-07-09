@@ -13,9 +13,6 @@ K = 5
 data_arr = load_data(filePath)
 N = data_arr.shape[0]
 
-lms, _, _ = discrete_normalized_Lmeasure(data_arr, EST)
-vd = topK_feats(lms, data_arr, K)
-
 # theta vector len = num_features (for marginals) + K
 
 # topK_pairs == vd
@@ -75,12 +72,10 @@ def optimizer(func_obj, data_arr, topK_pairs):
 
 
 
-
-
+lms, _, _ = discrete_normalized_Lmeasure(data_arr, EST)
+vd = topK_feats(lms, data_arr, K)
 
 opt = optimizer(f_objective, data_arr, vd)
-
-
 
 
 # ALL THIS ALSO SHOULD BE IN A CLASS
