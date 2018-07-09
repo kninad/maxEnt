@@ -5,20 +5,15 @@ date: 1 July 2018
 abstract:
     This document will act as report/notes for the maximum
     entropy project
-geometry: margin=1in
-indent: true
-header-includes:
-    \usepackage{palatino}
 ---
 
-# Introduction
+# Project Plan
 
-Fitting Distributions for Sparse Data Via Maximum Entropy.  
 Create a pdf (using pdflatex) from the markdown file:
 `pandoc report.md -o out-report.pdf`
 
 
-# Things to do
+## Things to do
 
 - Get started with coding (python)
 
@@ -26,10 +21,10 @@ Create a pdf (using pdflatex) from the markdown file:
 
 - Familiarize with the subject matter
 
-- Think about extensions
+- Think about extensions, start *writing* a report!
 
 
-# Coding
+## Coding
 
 - Start with a basic toy example
 
@@ -47,22 +42,48 @@ Create a pdf (using pdflatex) from the markdown file:
 2. Optimization/fitting part into another (which accepts 'important' features from part 1)
 
 
-# Plan
+## Specifics
 
 1. Entropy estimation module
+    - check if results from `pyitlib` and `pyentropy` are the same.
 
 - L-measure module (+ normalized L-measure)
 
 - Top $k$ feature pair extraction using L-measure
 
+- Partition feature set into `m` partitions. (Can be done later)
+
 - Use those $k$ along with marginal constraints for the optimization
   method (LBFGS)
 
-## Entropy estimation
-
-- Initially discrete-discrete case: 
 
 
+### Entropy estimation
+
+- Initially discrete-discrete case using the shrinkage estimate (JS)
+    - OPT: try out other entropy estimators and compare performance
+
+- Dis-Cts and Cts-Cts case to be done later.
+
+
+\newpage 
+
+# Introduction
+
+
+# Related Work
+
+
+# Method
+
+
+# Experiments
+
+
+# Applications
+
+
+# Conclusion
 
 
 
