@@ -1,6 +1,7 @@
 from __future__ import division
 import operator
 import numpy as np
+from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 from pyitlib import discrete_random_variable as drv
 
 from data_loading import load_data
@@ -45,7 +46,8 @@ def compute_hr(thetas, rvec, topK_pairs_dict):
     return constraint_sum
 
 # Objective for the optimization problem
-def computer_obj(data_arr, thetas, topK_pairs_dict):
+# It is a function of thetas
+def f_objective(thetas, data_arr, topK_pairs_dict):
     obj_sum = 0.0
     N = data_arr.shape[0]
     
@@ -55,27 +57,30 @@ def computer_obj(data_arr, thetas, topK_pairs_dict):
         inner_constraint_sum = compute_hr(thetas, rvec, topK_pairs_dict)
         obj_sum += inner_constraint_sum
 
-    return obj_sum
+    return -1 * obj_sum # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
+
+
+def optimizer(func_obj, data_arr, topK_pairs):
+
+    total_len = data_arr.shape[1] + len(topK_pairs)
+    init_thetas = np.random.rand(total_len,)
+
+    optimThetas = spmin_LBFGSB(func_obj,                                
+                                    x0=init_thetas, fprime=None,
+                                    args=(data_arr, topK_pairs),
+                                    approx_grad=True,                                    
+                                    disp=True)
+
+    return optimThetas
 
 
 
 
 
 
+opt = optimizer(f_objective, data_arr, vd)
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+# ALL THIS ALSO SHOULD BE IN A CLASS
