@@ -1,4 +1,5 @@
-data/
-docs/
-misc/
-
+data/*
+docs/*
+misc/*
+*.pdf
+*.pyc
