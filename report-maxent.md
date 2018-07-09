@@ -9,19 +9,31 @@ abstract:
 
 # Project Plan
 
-Create a pdf (using pdflatex) from the markdown file:
-`pandoc report.md -o out-report.pdf`
-
-
 ## Things to do
-
-- Get started with coding (python)
 
 - Read reference papers
 
 - Familiarize with the subject matter
 
 - Think about extensions, start *writing* a report!
+
+
+### To Ask
+
+- lbfgs convergence and initial theta values
+
+- marginal indicators when mutli-valued discrete
+    - since in binary its just 0-1, its easy!
+
+- top K selection since combinatorially expensive/prohibitive number of
+  possibilities to check for!
+
+- Cross check whether modfied formula used to compute function objective
+  is correct or not.
+
+- Paritioning!!!!!!!!!!
+
+- other extensions?
 
 
 ## Coding
@@ -35,27 +47,26 @@ Create a pdf (using pdflatex) from the markdown file:
 - Search for appropriate Python packages
 
 
-## Features 
+### Features 
 
 1. Feature/attribute selection into one module
 
 2. Optimization/fitting part into another (which accepts 'important' features from part 1)
 
 
-## Specifics
+### Specifics
 
 1. Entropy estimation module
     - check if results from `pyitlib` and `pyentropy` are the same.
 
 - L-measure module (+ normalized L-measure)
 
-- Top $k$ feature pair extraction using L-measure
+- Top $k$ feature pair extraction using L-measure calculation
 
 - Partition feature set into `m` partitions. (Can be done later)
 
 - Use those $k$ along with marginal constraints for the optimization
-  method (LBFGS)
-
+  method LBFGS (using `scipy` ??)
 
 
 ### Entropy estimation
@@ -63,10 +74,14 @@ Create a pdf (using pdflatex) from the markdown file:
 - Initially discrete-discrete case using the shrinkage estimate (JS)
     - OPT: try out other entropy estimators and compare performance
 
-- Dis-Cts and Cts-Cts case to be done later.
+- Dis+Cts and Cts-Cts case to be done later.
+
+
+**Actual report starts from the next page.**
 
 
 \newpage 
+
 
 # Introduction
 
@@ -84,37 +99,3 @@ Create a pdf (using pdflatex) from the markdown file:
 
 
 # Conclusion
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
