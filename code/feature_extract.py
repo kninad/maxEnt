@@ -16,7 +16,7 @@ def discrete_Lmeasure(data_arr, EST):
 
     for i in range(num_rand):
         for j in range(i+1, num_rand):
-            key = (i+1, j+1)    # since 0-indexed
+            key = (i, j)    # Remember!! 0-indexed
             h_i = indi_entropies[i]
             h_j = indi_entropies[j]
    
@@ -70,12 +70,11 @@ def discrete_normalized_Lmeasure(data_arr, EST):
 
     for i in range(num_rand):
         for j in range(i+1, num_rand):
-            key = (i+1, j+1)    # since 0-indexed
+            key = (i, j)    # since 0-indexed
             h_i = indi_entropies[i]
             h_j = indi_entropies[j]
    
-            mu_ij = discrete_mu(data_arr, i, j)
-            mu_vals[key] = mu_ij    # Storing for possible future use
+            mu_ij = discrete_mu(data_arr, i, j)            
 
             # Potential error: I_ij may come out negative depending on the estiamtor   
             I_ij = drv.information_mutual(data_arr.T[i], data_arr.T[j], estimator=EST)
@@ -91,6 +90,7 @@ def discrete_normalized_Lmeasure(data_arr, EST):
             inner_exp_term = (-1.0 * 2 * I_ij_hat) / (1 - float(I_ij_hat) / W_ij_hat)
             L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
             I_mutinfo[key] = I_ij
+            mu_vals[key] = mu_ij    # Storing for possible future use
 
     return L_measures, I_mutinfo, mu_vals
 

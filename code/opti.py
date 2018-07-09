@@ -18,11 +18,11 @@ vd = topK_feats(lms, data_arr, K)
 # theta vector len = num_features (for marginals) + K
 
 # topK_pairs == vd
-def compute_hr(thetas, rvec, topK_pairs):    
+def compute_hr(thetas, rvec, topK_pairs_dict):    
     constraint_sum = 0.0
     
     # Can do this before too
-    topK_list = [(k,v) for k,v in topK_pairs.items()]
+    topK_list = [(k,v) for k,v in topK_pairs_dict.items()]
     
     # marginals    
     num_feats = len(rvec)
@@ -33,7 +33,49 @@ def compute_hr(thetas, rvec, topK_pairs):
         constraint_sum += thetas[i] * indicator
     
     # top K constraints
+    for j, tup in enumerate(topK_list):
+        key = tup[0]
+        val = tup[1]
+        condition = rvec[key[0]] == val[0] and rvec[key[1]] == val[1]
+        indicator = 1 if condition else 0
+        constraint_sum += thetas[j + num_feats] * indicator
+        # SINCE THETAS IS CONTIGUOUS VECTOR
+        # CAN ALSO BREAK UP THETAS into MARGINAL AND topK CONSTRATINTS    
 
+    return constraint_sum
+
+# Objective for the optimization problem
+def computer_obj(data_arr, thetas, topK_pairs_dict):
+    obj_sum = 0.0
+    N = data_arr.shape[0]
     
+    # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
+    for i in range(N):
+        rvec = data_arr[i,:]
+        inner_constraint_sum = compute_hr(thetas, rvec, topK_pairs_dict)
+        obj_sum += inner_constraint_sum
 
-    return
+    return obj_sum
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
