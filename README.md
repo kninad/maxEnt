@@ -4,4 +4,11 @@
 
 Code is in Python2 as some of libraries used do not support Python3.
 
-`report-maxent.md` is the markdown report file. Create a pdf (using pdflatex and pandoc) from the markdown file: `pandoc report.md -o out-report.pdf` 
+### Libraries used:
+
+- `numpy`, `scipy` (for the L-BFGS-B optimization module)
+- `pyitlib` for discrete random vairable entropy calculations
+
+report-maxent.md is the markdown report file. Create a pdf (using pdflatex and pandoc) from the markdown file:
+
+`pandoc report.md -o out-report.pdf` 
