@@ -35,8 +35,13 @@ abstract:
 
 - other extensions?
 
+- INCORPORATE A CLASS/OOP STRUCTURE TO CODE!
+
 
 ## Coding
+
+- Optimiz: turn `approx_grad` parameter to False and write down 
+  the function gradient
 
 - Start with a basic toy example
 
