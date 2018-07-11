@@ -20,6 +20,8 @@ abstract:
 
 ### To Ask
 
+- I(X;Y) becoming negative (both in normalized and un-normlaized setting)
+
 - lbfgs convergence and initial theta values
 
 - marginal indicators when mutli-valued discrete
