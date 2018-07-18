@@ -11,12 +11,12 @@ class ExtractFeatures(object):
         self.data_arr = dataArray
         self.ent_estimator = entropy_estimator
         self.K = topK        
-        self.N = self.data_arr.shape[0] # Number of training examples
+        self.N = self.data_arr.shape[0] # Number of training data examples
         
         self.L_measure_dict = {}    # Will be assinged once the appropriate method is run
         self.feats_pairs_dict = {} # For the exact feature value pairs in the Constraints
         
-
+    # un-normalized L-measure
     def compute_discrete_Lmeasure(self):    
         indi_entropies = drv.entropy(self.data_arr.T, self.ent_estimator)   # indvidual entropies
         num_rand = self.data_arr.shape[1]    # number of features / random variables

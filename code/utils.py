@@ -16,6 +16,15 @@ def load_data(filePath):
     return data_arr
 
 
+def load_data(filePath):
+    df = pd.read_csv(filePath)
+    # df1 = df.drop(['fyAGE', 'CCCfy98.1'], axis=1) # erroneous column. CCCfy98 repeated in original csv file
+    tups = [tuple(x) for x in df.values]
+
+    data_arr = np.asarray(tups)
+
+    return data_arr
+
 
 
 
