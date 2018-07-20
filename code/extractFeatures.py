@@ -39,7 +39,8 @@ class ExtractFeatures(object):
                                                 estimator=self.ent_estimator)
                 
                 # TEMP FIX for I(x,y) going negative
-                I_ij = np.abs(I_ij)    
+                # I_ij = np.abs(I_ij)
+                I_ij = np.max(I_ij, 0)    
                 
                 W_ij = min(h_i, h_j)
                 inner_term = (-1.0 * 2 * I_ij) / (1 - float(I_ij)/W_ij)
@@ -99,7 +100,8 @@ class ExtractFeatures(object):
                 
                 # Potential error: I_ij may come out negative depending on the estiamtor   
                 I_ij_hat = I_ij - mu_ij
-                I_ij_hat = np.abs(I_ij_hat)
+                # I_ij_hat = np.abs(I_ij_hat)
+                I_ij_hat = np.max(I_ij_hat, 0)
                 
                 W_ij_hat = W_ij - mu_ij
 

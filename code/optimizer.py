@@ -1,4 +1,6 @@
 from __future__ import division
+import itertools
+
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 
@@ -29,7 +31,9 @@ class Optimizer(object):
 
     # This function computes the inner sum of the 
     # optimization function objective
-    def compute_hr(self, thetas, rvec):    
+    
+    # could split thetas into marginal and specials
+    def compute_constraint_sum(self, thetas, rvec):    
         constraint_sum = 0.0
         topK_pairs_dict = self.featsObj.feats_pairs_dict
 
@@ -57,6 +61,22 @@ class Optimizer(object):
 
         return constraint_sum
 
+    # normalization constant Z(theta)
+    # assuming binary features for now.
+    def binary_norm_constant_Z(self, thetas):
+        norm_sum = 0.0
+        # N = self.featsObj.N        
+        data_arr = self.featsObj.data_arr
+        num_feats = data_arr.shape[1]
+        # lst = map(list, itertools.product([0, 1], repeat=n))
+        all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
+        
+        for vec in all_perms:
+            tmp = self.compute_constraint_sum(thetas, vec)
+            norm_sum += np.exp(tmp)
+
+        return norm_sum
+
 
     # Objective for the optimization problem
     # It is a function of thetas
@@ -68,8 +88,11 @@ class Optimizer(object):
         # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
         for i in range(N):
             rvec = data_arr[i,:]
-            inner_constraint_sum = self.compute_hr(thetas, rvec)
+            inner_constraint_sum = self.compute_constraint_sum(thetas, rvec)
             objective_sum += inner_constraint_sum
+
+        subtraction_term = N * np.log(self.binary_norm_constant_Z(thetas))
+        objective_sum -= subtraction_term
 
         return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
 
