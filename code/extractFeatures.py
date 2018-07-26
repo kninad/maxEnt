@@ -1,4 +1,5 @@
 from __future__ import division
+from collections import defaultdict
 import operator
 import numpy as np
 
@@ -15,7 +16,9 @@ class ExtractFeatures(object):
         
         self.L_measure_dict = {}    # Will be assinged once the appropriate method is run
         self.feats_pairs_dict = {} # For the exact feature value pairs in the Constraints
-        
+        self.feat_graph = {}     # Feature realtion graph, ADJ-LIST rep
+        self.feat_partitions = []   # Feature partitions
+
     # un-normalized L-measure
     def compute_discrete_Lmeasure(self):    
         indi_entropies = drv.entropy(self.data_arr.T, self.ent_estimator)   # indvidual entropies
@@ -154,6 +157,48 @@ class ExtractFeatures(object):
                         maxima = delta_ij
                         val_dict[k_tuple] = (xi, yj)
 
-
         self.feats_pairs_dict = val_dict
         # return val_dict     # can comment it out
+
+
+    def create_partition_graph(self):
+        graph = {}  # undirected graph
+        num_feats = self.data_arr.shape[1]
+
+        # init for each node an empty set of neighbors
+        for i in range(num_feats):
+            graph[i] = set()
+
+        # create adj-list representation of the graph
+        for tup in self.feats_pairs_dict:
+            graph[tup[0]].add(tup[1])
+            graph[tup[1]].add(tup[0])
+
+        self.feat_graph = graph
+        # return graph
+
+    def partition_features(self):        
+        self.create_partition_graph()
+
+        def connected_components(neighbors):
+            seen = set()
+            def component(node):
+                nodes = set([node])
+                while nodes:
+                    node = nodes.pop()
+                    seen.add(node)
+                    nodes |= neighbors[node] - seen
+                    yield node
+            for node in neighbors:
+                if node not in seen:
+                    yield component(node)
+
+        partitions = []
+        for comp in connected_components(self.feat_graph):
+            partitions.append(list(comp))
+        
+        self.feat_partitions = partitions
+        # return partitions
+        
+
+

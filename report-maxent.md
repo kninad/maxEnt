@@ -16,26 +16,27 @@ abstract:
 - Dealing with multi-valued discrete data and continuous data (new methods for
   these cases) + additions to data utils code file.
 
-- Partitioning the features
+- Partitioning the features -- connected components of a graph
 
-- calculating Z (normalization constant) -- for binary, its easy. tough for 
-  cts/dld
+- calculating Z (normalization constant)
 
 - check if mutual info values are very close negative to zero?
 
 - data filtering -- remove redundant features (either appearing in all or none 
   or use some kind of threshold)
 
-- sanity checks -- marginals and constraints should equal the mle output
+- final output as a probability distribution
+  - sanity checks -- marginals and constraints should (approximately) equal the mle output
 
 - friday 1pm meeting
+
 
 ### Ask
 
 - I(X;Y) becoming negative (both in normalized and un-normlaized setting)
   - threshold below at 0
 
-- lbfgsb initial theta values
+- lbfgsb initial theta values ????????????
 
 - marginal indicators when mutli-valued discrete
     - since in binary its just 0-1, its easy!
@@ -56,23 +57,17 @@ abstract:
 - Partition feature set into `m` partitions.
 
 
-### Entropy estimation
-
-- Initially discrete-discrete case using the shrinkage estimate (JS)
-
-- Dis+Cts and Cts-Cts case to be done later.
-
-
 ## Report notes
 
-- dealing with data sparsity
+- Dealing with data sparsity -- maxent approach
 
 - entropy estimation topics
   - try out other entropy estimators and compare performance
 
 - use of L measure -- normalization, top covariate selection
 
-- Partitioning of features into compartments
+- Partitioning of features into compartments -- transitive closure and
+  connected components in a graph
 
 - optimization, cvx, numerical methods
   - iterative scaling vs lbfgsb

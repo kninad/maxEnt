@@ -14,7 +14,7 @@ from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
     which calcs it numerically.
 '''
 
-class Optimizer(object):
+class Solver(object):
     # features_object is an object of ExtractFeatures class
     def __init__(self, features_object, initial_theta_vec=None):
 
@@ -27,6 +27,7 @@ class Optimizer(object):
         
         # Variable to store the output of the optimization process/solver/function
         self.opt_sol = None     
+        self.norm_z = None
         
 
     # This function computes the inner sum of the 
@@ -63,7 +64,7 @@ class Optimizer(object):
 
     # normalization constant Z(theta)
     # assuming binary features for now.
-    def binary_norm_constant_Z(self, thetas):
+    def binary_norm_Z(self, thetas):
         norm_sum = 0.0
         # N = self.featsObj.N        
         data_arr = self.featsObj.data_arr
@@ -91,7 +92,7 @@ class Optimizer(object):
             inner_constraint_sum = self.compute_constraint_sum(thetas, rvec)
             objective_sum += inner_constraint_sum
 
-        subtraction_term = N * np.log(self.binary_norm_constant_Z(thetas))
+        subtraction_term = N * np.log(self.binary_norm_Z(thetas))
         objective_sum -= subtraction_term
 
         return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
@@ -114,5 +115,42 @@ class Optimizer(object):
                                     disp=True)
 
         self.opt_sol = optimThetas
+        self.norm_z = self.binary_norm_Z(self.opt_sol[0])
         return optimThetas
+
+    def prob_dist(self, rvec):
+        opt_thetas = self.opt_sol[0]
+        # norm_z = self.binary_norm_Z(opt_thetas)
+        term_exp = self.compute_constraint_sum(opt_thetas, rvec)
+
+        return (1.0/self.norm_z) * np.exp(term_exp)
+
+
+    def compare_marginals(self, col):        
+        prob = 0.0
+        
+        N = self.featsObj.N        
+        data_arr = self.featsObj.data_arr
+        num_feats = data_arr.shape[1]
+        # lst = map(list, itertools.product([0, 1], repeat=n))
+        all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
+        
+        for vec in all_perms:
+            if vec[col] == 1:
+                prob += self.prob_dist(vec)
+        
+        mle = 0
+        for vec in data_arr:
+            if vec[col] == 1:
+                mle += 1
+        mle = mle * 1.0 / N
+
+
+        return prob, mle
+
+
+
+
+
+
 
