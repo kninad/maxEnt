@@ -146,7 +146,7 @@ class Solver(object):
         mle = mle * 1.0 / N
 
 
-        return prob, mle
+        return np.abs(prob-mle) 
 
 
 

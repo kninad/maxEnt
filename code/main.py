@@ -3,7 +3,8 @@ import pickle
 
 from utils import load_data, load_data_small
 from extractFeatures import ExtractFeatures
-from optimizer import Solver
+# from optimizer import Solver
+from partitioned_optimizer import Solver
 
 filePath = '../data/Age50_DataExtract.csv'
 entropy_est = 'JAMES-STEIN'
@@ -19,8 +20,8 @@ feats.partition_features()
 
 
 
-# opt = Solver(feats)
-# soln_opt = opt.solver_optimize()
+opt = Solver(feats)
+soln_opt = opt.solver_optimize()
 
 # saveFilePath = './feat20_solun.pk'
 
@@ -28,4 +29,5 @@ feats.partition_features()
 #     pickle.dump(soln_opt, wfile, -1)
 
 
-# print(opt.compare_marginals(2))
+for i in range(data_array.shape[1]):
+    print(opt.compare_marginals(i))
