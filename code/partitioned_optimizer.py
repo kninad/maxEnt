@@ -1,5 +1,6 @@
 from __future__ import division
 import itertools
+from collections import defaultdict
 
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
@@ -176,32 +177,60 @@ class Solver(object):
 
         
 
-
-    def compare_marginals(self, col):        
-        prob = 0.0
-        
+    def compare_marginals(self):        
+                
         N = self.featsObj.N        
         data_arr = self.featsObj.data_arr
         num_feats = data_arr.shape[1]
         # lst = map(list, itertools.product([0, 1], repeat=n))
         all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
         
+        mxt_dict = defaultdict(float)
+        emp_dict = defaultdict(float)
+
         for vec in all_perms:
-            if vec[col] == 1:
-                prob += self.prob_dist(vec)
+            for j in range(num_feats):
+                if vec[j] == 1:
+                    mxt_dict[j] += self.prob_dist(vec)
         
-        mle = 0
+        
         for vec in data_arr:
-            if vec[col] == 1:
-                mle += 1
-        mle = mle * 1.0 / N
+            for j in range(num_feats):
+                if vec[j] == 1:
+                    emp_dict[j] += 1
 
 
-        return np.abs(prob-mle) 
+        for k in emp_dict:
+            emp_dict[k] /= N
+
+        return mxt_dict, emp_dict
 
 
+    def compare_constraints(self):        
 
+        N = self.featsObj.N        
+        data_arr = self.featsObj.data_arr
+        num_feats = data_arr.shape[1]
+        # lst = map(list, itertools.product([0, 1], repeat=n))
+        all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
 
+        pair_dict = self.featsObj.feats_pairs_dict
+        mxt_dict = defaultdict(float)
+        emp_dict = defaultdict(float)
 
+        for vec in all_perms:
+            for key,val in pair_dict.items():
+                if vec[key[0]] == val[0] and vec[key[1]] == val[1]:
+                    mxt_dict[(key,val)] += self.prob_dist(vec)
+        
+        
+        for vec in data_arr:
+            for key,val in pair_dict.items():
+                if vec[key[0]] == val[0] and vec[key[1]] == val[1]:
+                    emp_dict[(key,val)] += 1.0
 
+        for k in emp_dict:
+            emp_dict[k] /= N
+
+        return mxt_dict, emp_dict
 

@@ -16,7 +16,7 @@ def load_data(filePath):
     return data_arr
 
 
-## CSV FILE HEADERS
+####### CSV FILE HEADERS ######
 # #Index([u'fyAGE', u'CCCfy49', u'CCCfy53', u'CCCfy98', u'CCCfy98.1', u'CCCfy100',
 #        u'CCCfy101', u'CCCfy128', u'CCCfy204', u'CCCfy205', u'CCCfy651',
 #        u'CCCsy49', u'CCCsy53', u'CCCsy98', u'CCCsy100', u'CCCsy101',
@@ -25,11 +25,12 @@ def load_data(filePath):
 
 def load_data_small(filePath):
     df = pd.read_csv(filePath)
-    # df1 = df.drop(['fyAGE', 'CCCfy98.1'], axis=1) # erroneous column. CCCfy98 repeated in original csv file
+    #### Erroneous column. CCCfy98 repeated in original csv file ####
+    ### No need for AGE since its same for all ###
     df = df.drop(['fyAGE', 'CCCfy98.1'], axis=1) 
-    df2 = df.drop(['CCCfy128', 'CCCfy204', 'CCCfy205', 'CCCfy651', 
-                    'CCCsy128', 'CCCsy204', 'CCCsy205', 'CCCsy651'],
-                    axis=1) 
+
+    drop_list = ['CCCsy49', 'CCCsy53', 'CCCsy98', 'CCCsy100', 'CCCsy101', 'CCCsy128', 'CCCsy204', 'CCCsy205', 'CCCsy651']
+    df2 = df.drop(drop_list,axis=1) 
     tups = [tuple(x) for x in df2.values]
 
     data_arr = np.asarray(tups)
