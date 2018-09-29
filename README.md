@@ -1,14 +1,20 @@
 # maxEnt
 
-## Fitting Distributions for Sparse Data Via Maximum Entropy
+## Sparse Data -- Maximum Entropy
 
 Code is in Python2 as some of libraries used do not support Python3.
 
-### Libraries used:
+### Python libs used:
 
 - `numpy`, `scipy` (for the L-BFGS-B optimization module)
 - `pyitlib` for discrete random vairable entropy calculations
 
-report-maxent.md is the markdown report file. Create a pdf (using pdflatex and pandoc) from the markdown file:
+### Notes
 
-`pandoc report-maxent.md -o out-report.pdf`
+All the discussion notes along with the todo lists and things to try out
+are in the `report-maxent.md`markdown file. 
+
+Create a pdf (using pdflatex and pandoc) from the markdown file:
+`pandoc report-maxent.md -o report.pdf`
+
+The actual report starts at the very end with the appropriate sections
