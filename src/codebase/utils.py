@@ -1,56 +1,143 @@
 import pandas as pd
 import numpy as np 
 
+'''
+Perform all utility taks here:
+- Data loading modules
+- Writing clean csv files
+- Removing missing values, extra columns, NaN etc.
+- Functions to deal with specific files
+'''
 
-# Perform all utility taks here
-# Etc data loading, data cleaning etc.
-# Removing missing values, extra columns
 
+'''
+Function to load a csv file and return it as numpy array
+It is required that the data is binary. So convert any value that is > 0 to 1
+'''
 def load_data(filePath):
     df = pd.read_csv(filePath)
-    df1 = df.drop(['fyAGE', 'CCCfy98.1'], axis=1) # erroneous column. CCCfy98 repeated in original csv file
-    tups = [tuple(x) for x in df1.values]
-
+    tups = [tuple(x) for x in df.values]
     data_arr = np.asarray(tups)
 
+    # Map all positive values to 1 since any > 0 indicates the disease
+    data_arr[data_arr > 0] = 1
     return data_arr
 
 
-####### CSV FILE HEADERS ######
-# #Index([u'fyAGE', u'CCCfy49', u'CCCfy53', u'CCCfy98', u'CCCfy98.1', u'CCCfy100',
-#        u'CCCfy101', u'CCCfy128', u'CCCfy204', u'CCCfy205', u'CCCfy651',
-#        u'CCCsy49', u'CCCsy53', u'CCCsy98', u'CCCsy100', u'CCCsy101',
-#        u'CCCsy128', u'CCCsy204', u'CCCsy205', u'CCCsy651'],
-#       dtype='object')
+'''
+Function to clean and write the fy, sy and merged csv files from the 
+2010-2014 csv file. Only the fy and sy disease prevalences are extracted from
+the csv file. All other columns are ignored. This code is taken from the 
+data_exploration ipython notebook.
+''' 
+def write_csv_files_2010_14():
+    bigFilePath = '../data/2010-2014.csv'
+    big_df = pd.read_csv(bigFilePath)
+    col_list = big_df.columns
+    # print col_list
+    print "Total columns:",  len(col_list)
 
-def load_data_1yr(filePath):
+    print "Extracting relevant column numbers: "
+
+    # first disease is 'CCCfy1'
+    i = 0
+    for i in range(len(col_list)):
+        if col_list[i] == 'CCCfy1':
+            print i
+            break
+
+    # last disease is 'CCCfy670'
+    j = 0
+    for j in range(len(col_list)):
+        if col_list[j] == 'CCCfy670':
+            print j
+            break
+
+    first_index = i
+    fy_last_index = j
+    total_first_year = fy_last_index - first_index + 1
+    end_index = first_index + 2 * total_first_year 
+
+    # sanity check: end_index should be the one just after
+    # the last disease's sy column
+    print first_index, fy_last_index, end_index
+    print col_list[first_index], col_list[fy_last_index], col_list[end_index-1]
+
+    # disease_list_2years is the list for all the columns for first year (fy)
+    # disease prevalence in the dataset
+    disease_list_fy = col_list[first_index:fy_last_index+1]
+    print "Fy disease list:", disease_list_fy
+
+    # disease_list_sy is the list for all the columns for second year (sy)
+    # disease prevalence in the dataset
+    disease_list_sy = col_list[fy_last_index+1:end_index]
+    print "Sy disease list:", disease_list_sy
+
+
+    # disease_list_merge is the list for all the columns for first and second year 
+    # (fy and sy) disease prevalence in the dataset
+    disease_list_merge = col_list[first_index:end_index]
+    print "Merge disease list:", disease_list_merge
+
+
+    df_fy = big_df.filter(disease_list_fy, axis=1)
+    df_sy = big_df.filter(disease_list_sy, axis=1)
+    df_merge = big_df.filter(disease_list_merge, axis=1)
+
+    print "Printing the shape of the three data frames:"
+    print df_fy.shape, df_sy.shape, df_merge.shape
+
+    # Drop the rows who have NaN in certain columns
+    df_fy = df_fy.dropna()
+    df_sy = df_sy.dropna()
+    df_merge = df_merge.dropna()
+
+    print "Printing the shape of the three data frames after dropping the NaN rows:"
+    print df_fy.shape, df_sy.shape, df_merge.shape
+
+
+    print "Saving the cleaned data frames to csv files"
+    fy_csv_file = '../data/2010-2014-fy.csv'
+    sy_csv_file = '../data/2010-2014-sy.csv'
+    merge_csv_file = '../data/2010-2014-merge.csv'
+
+    df_fy.to_csv(fy_csv_file, encoding='utf-8', index=False)
+    df_sy.to_csv(sy_csv_file, encoding='utf-8', index=False)
+    df_merge.to_csv(merge_csv_file, encoding='utf-8', index=False)
+
+    return
+
+
+'''
+Function to clean and write the fy, sy and merged csv files from the 
+50Age toy dataset csv file. Only the fy and sy disease prevalences are extracted 
+from the csv file. All other columns are ignored. This code is taken from the 
+data_exploration ipython notebook.
+''' 
+def write_csv_files_toy_data():
+    # Loading the toy-dataset
+    filePath = '../data/Age50_DataExtract.csv'
     df = pd.read_csv(filePath)
-    #### Erroneous column. CCCfy98 repeated in original csv file ####
-    ### No need for AGE since its same for all ###
-    df = df.drop(['fyAGE', 'CCCfy98.1'], axis=1) 
 
-    drop_list = ['CCCsy49', 'CCCsy53', 'CCCsy98', 'CCCsy100', 'CCCsy101', 'CCCsy128', 'CCCsy204', 'CCCsy205', 'CCCsy651']
-    df2 = df.drop(drop_list,axis=1) 
-    tups = [tuple(x) for x in df2.values]
+    print df.columns
 
-    data_arr = np.asarray(tups)
+    drop_list = ['fyAGE', 'CCCfy98.1']
+    df = df.drop(drop_list, axis=1)
 
-    return data_arr
+    fy_list = col_list[:9]
+    sy_list = col_list[9:]
 
+    df_fy = df.filter(fy_list, axis=1)
+    df_sy = df.filter(sy_list, axis=1)
 
-def load_data_merge(filePath):
-    df = pd.read_csv(filePath)
-    df1 = df.drop(['fyAGE', 'CCCfy98.1'], axis=1) # erroneous column. CCCfy98 repeated in original csv file
-    tups = [tuple(x) for x in df1.values]
+    print "Saving the clean csv files"
 
-    data_arr = np.asarray(tups)
+    fname_merge = '../data/Age50_DataExtract_merge.csv'
+    fname_fy = '../data/Age50_DataExtract_fy.csv'
+    fname_sy = '../data/Age50_DataExtract_sy.csv'
 
-    cols = data_arr.shape[1]
-    clim = int(cols/2)
-    for vec in data_arr:
-        for i in range(int(cols/2)):
-            vec[i] = vec[i] ^ vec[cols - 1 -i]
+    df.to_csv(fname_merge, encoding='utf-8', index=False)
+    df_fy.to_csv(fname_fy, encoding='utf-8', index=False)
+    df_sy.to_csv(fname_sy, encoding='utf-8', index=False)
 
-    data_arr = data_arr[:, :clim]
-
-    return data_arr
+    return

@@ -5,7 +5,6 @@ import numpy as np
 
 from pyitlib import discrete_random_variable as drv
 
-
 class ExtractFeatures(object):
 
     def __init__(self, dataArray, entropy_estimator='JAMES-STEIN', topK=5):
@@ -192,9 +191,12 @@ class ExtractFeatures(object):
         self.feat_graph = graph
         # return graph
     
-    # Function to partition the set of features for easier computation
-    # Partitoning is equivalen to finding all the connected components in 
-    # the undirected graph
+    
+    '''
+    Function to partition the set of features for easier computation
+    Partitoning is equivalen to finding all the connected components in 
+    the undirected graph
+    '''
     def partition_features(self):        
         self.create_partition_graph()
 
