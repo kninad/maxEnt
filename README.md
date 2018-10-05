@@ -15,6 +15,6 @@ All the discussion notes along with the todo lists and things to try out
 are in the `report-maxent.md`markdown file. 
 
 Create a pdf (using pdflatex and pandoc) from the markdown file:
-`pandoc report-maxent.md -o report.pdf`
+`pandoc report.md -o report.pdf`
 
 The actual report starts at the very end with the appropriate sections

@@ -3,16 +3,11 @@ title: Chronic Disease Modelling
 author: Ninad Khargonkar 
 date: 1 Nov 2018 
 abstract: 
-    This
-    document will act as report/notes for the
-    maximum entropy sparse data fitting application
-    project for chronic disease modelling. All the
+    This  document will act as report/notes for the
+    project chronic disease modelling. All the
     notes from the discussions will be compiled here
     so as to make the process of writing a report at
-    end easier. After each meeting, a short summary
-    of the points discussed that day should be
-    written down with the date along with adding the
-    important things to try in the compendium section.
+    end easier.
 ---
 
 # Project Plan
@@ -26,6 +21,9 @@ abstract:
 - Try to work on report/code whenever there is an hour or two gaps
 - Since its an I.S, treat its time commitment as equivalent to a
   course (RL)
+- After each meeting a short summary of the points discussed that day should be
+  written down with the date along with adding the important things to try in 
+  the compendium section.
 
 
 
