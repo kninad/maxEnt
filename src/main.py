@@ -4,30 +4,25 @@ import numpy as np
 import itertools
 from matplotlib import pyplot as plt
 
-from utils import load_data_1yr, load_data_merge
-from extractFeatures import ExtractFeatures
-# from optimizer import Solver
-from partitioned_optimizer import Solver
+import sys
+path_to_codebase = '/mnt/Study/umass/sem3/maxEnt/src/codebase/'
+sys.path.insert(0, path_to_codebase)
+from codebase.utils import load_disease_data
+from codebase.extract_features import ExtractFeatures
+from codebase.optimizer import Optimizer
 
-filePath = '../data/Age50_DataExtract.csv'
+# filePath = '../data/Age50_DataExtract_fy.csv'
+filePath = '../data/2010-2014-fy.csv'
 entropy_est = 'JAMES-STEIN'
-k_val = 15
+k_val = 5
 
-'''
-IMPORTANT
-
-Use load_data_small since we only need to consider the first year data.
-load_data_small loads only the first 9 feature column corresponding to the
-first year prevalence of the disease in the individual.
-'''
-# data_array = load_data_merge(filePath)
-data_array = load_data_1yr(filePath)
+data_array = load_disease_data(filePath)
 
 feats = ExtractFeatures(data_array, entropy_est, k_val)
-feats.compute_topK_feats()
+feats.compute_topK_feats_approx()
 feats.partition_features()
 
-opt = Solver(feats)
+opt = Optimizer(feats)
 soln_opt = opt.solver_optimize()
 
 m1, m2 = opt.compare_marginals()

@@ -1,20 +1,34 @@
 import pandas as pd
 import numpy as np 
 
-'''
-Perform all utility taks here:
-- Data loading modules
-- Writing clean csv files
-- Removing missing values, extra columns, NaN etc.
-- Functions to deal with specific files
-'''
+"""Perform all utility taks here
+Code is taken from the data_exploration ipython notebook.
+
+TODO:
+Data loading modules
+Writing clean csv files
+Removing missing values, extra columns, NaN etc.
+Data filering - removing redunant features using thresholding
+Functions to deal with specific files
+"""
 
 
-'''
-Function to load a csv file and return it as numpy array
-It is required that the data is binary. So convert any value that is > 0 to 1
-'''
-def load_data(filePath):
+
+
+def load_disease_data(filePath):
+    """ Creates a numpy array from given csv file
+
+    Creates a pandas dataframe from the given csv file and then exports it to 
+    a numpy ndarray. Also perfoms the check where any value > 0 is mapped to 1 
+    since it corresponds to a particular disease being prevalent.
+
+    Args:
+        filePath: Path to the csv file to load the disease data from
+
+    Returns:
+        A binary (0-1) numpy ndarray with each row corresponding to a particular 
+        person's disease prevalence data. 
+"""
     df = pd.read_csv(filePath)
     tups = [tuple(x) for x in df.values]
     data_arr = np.asarray(tups)
@@ -24,13 +38,22 @@ def load_data(filePath):
     return data_arr
 
 
-'''
-Function to clean and write the fy, sy and merged csv files from the 
-2010-2014 csv file. Only the fy and sy disease prevalences are extracted from
-the csv file. All other columns are ignored. This code is taken from the 
-data_exploration ipython notebook.
-''' 
+
+
+
 def write_csv_files_2010_14():
+    """Get disease data from the complete 2010-14 csv file and write to csv files
+
+    Function to clean and write the fy, sy and merged csv files from the 
+    2010-2014 csv file. Only the fy and sy disease prevalences are extracted 
+    from the csv file. All other columns are ignored. 
+
+    Args:
+        None
+
+    Returns:
+        None
+    """ 
     bigFilePath = '../data/2010-2014.csv'
     big_df = pd.read_csv(bigFilePath)
     col_list = big_df.columns
@@ -108,13 +131,21 @@ def write_csv_files_2010_14():
     return
 
 
-'''
-Function to clean and write the fy, sy and merged csv files from the 
-50Age toy dataset csv file. Only the fy and sy disease prevalences are extracted 
-from the csv file. All other columns are ignored. This code is taken from the 
-data_exploration ipython notebook.
-''' 
+
+
+
 def write_csv_files_toy_data():
+    """Clean and write csv files from toy data set
+    Function to clean and write the fy, sy and merged csv files from the 
+    50Age toy dataset csv file. Only the fy and sy disease prevalences are 
+    extracted from the csv file. All other columns are ignored. 
+
+    Args:
+        None
+
+    Returns:
+        None
+    """ 
     # Loading the toy-dataset
     filePath = '../data/Age50_DataExtract.csv'
     df = pd.read_csv(filePath)
