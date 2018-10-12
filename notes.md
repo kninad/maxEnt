@@ -41,7 +41,7 @@ abstract:
 
 - Run the maxent on the entire dataset -- make it more scalable
 
-- Request swarm server access from Peter. Just a single node will be enough.
+- Request swarm-server access from Peter. Just a single node will be enough.
 
 - Review top-K calculation
 
@@ -49,25 +49,43 @@ abstract:
   the code from the exploratory, validation work.
   
 
-# Compendium of discussions 
+# Compendium of discussions and notes
 
 -   Data filtering: remove redundant features
     -   either appearing in all or
     -   use thresholds: gt= 0.99 or lt= 0.01
 
 -   Top $k$ feature pair extraction using normalized L-measure
-    -   some better guided way to accomplish that?
-    -   check other exact and approximate methods
-    -   just keep on trying with a higher k
-    -   plot and see elbow
+    -   some better guided way to accomplish that? check other exact and 
+        approximate methods
+    -   top-K computation -- Since L(x,y) is a value between 0 and 1 (clamped),
+        0 indicating independence and 1 indicating dependence, the paris of 
+        (x,y) that we want are those nearing 1. First level of extraction is here.
+        So for a given value of K, only extract the top-K pairs based on their
+        L(x,y) values since this will guarantee atleast K exact feature value
+        pairs. Now for those K (x,y) pairs select from them the top-K exact
+        feature value pairs based on the sorted order
+    
+    -   Alternative is to get the top-K feature pairs and just get the maximum
+        scoring exactt feature value pair for each of them -- will get total K.
+        Helps in spreading out the constraints over a wider set of feat-pairs.
+        Easier and faster to compute.
+
+
+    -   cross-validation for K-val -- plot and see elbow (keep trying with a higher k)
 
 -   Approximate partitioning (for top-k feats)
     -   if exact partitioning is taking long time, making the approximation more
        robust and generalize
     -   McCallum paper: piece-wise likelihood method.
     -   treat everything as independent,  tune the normalization constant
-    - Rank ordering the edges in the partitions
-    - Finding the connected components -- approximate instead of exact computn
+
+- Rank ordering the edges in the partitions
+    - Define the feature graph in the usual way
+    - Drop the lowest weighted edges between the nodes (nodes are the feature
+      /column indices)
+    - Weights are the L_hat(i,j) values between two feat. indices
+    - Find the connected components (partitions)
 
 -   Market basket analysis
     -   sets that have related condition (diabetes, hypertension)
