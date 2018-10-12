@@ -14,16 +14,111 @@ abstract:
 
 - Object oriented and proper self-documenting code
     - make code commenting compliant to auto-documenting programs like doxygen
+
 - Activate the `maxent` python2 environment for running the code
+
 - Friday 1.30 pm meeting in Peter's office.
+
 - Try to work on report/code whenever there is an hour or two gaps
+
 - Since its an I.S, treat its time commitment as equivalent to a course (RL)
+
 - After each meeting a short summary of the points discussed that day should be
   written down with the date along with adding the important things to try in 
-  the compendium section
+  the compendium + todo sections
+
+- For the report, target about 2 pages of writing for a week. At least try to 
+  document everything properly in this document. It need not be the final 
+  version! Just add the rough notes here or document the writeups in ipynbs.
+
+--------------------------------------------------------------------------------
+
+## ToDo
+
+- All the sanity checks compiled into a ipython notebook
+
+- Better documented code
+
+- Run the maxent on the entire dataset -- make it more scalable
+
+- Request swarm server access from Peter. Just a single node will be enough.
+
+- Review top-K calculation
+
+- Do all of these computations in a jupyter notebook so as to separate
+  the code from the exploratory, validation work.
+  
+
+# Compendium of discussions 
+
+-   Data filtering: remove redundant features
+    -   either appearing in all or
+    -   use thresholds: gt= 0.99 or lt= 0.01
+
+-   Top $k$ feature pair extraction using normalized L-measure
+    -   some better guided way to accomplish that?
+    -   check other exact and approximate methods
+    -   just keep on trying with a higher k
+    -   plot and see elbow
+
+-   Approximate partitioning (for top-k feats)
+    -   if exact partitioning is taking long time, making the approximation more
+       robust and generalize
+    -   McCallum paper: piece-wise likelihood method.
+    -   treat everything as independent,  tune the normalization constant
+    - Rank ordering the edges in the partitions
+    - Finding the connected components -- approximate instead of exact computn
+
+-   Market basket analysis
+    -   sets that have related condition (diabetes, hypertension)
+    -   pivot tables?
+    -   reference: ESL 14.2
+    -   `apriori` function from `mlextend` lib
+    -   bump-hunting?
+
+-   Compute the transition probabilities between ages
+    -   refer to the last page of note for details
+    -   something about steady state of markov chain.
+
+## Validation checks
+
+-   Final output as a probability distribution
+    -   sanity
+    -   marginals and constraints should (approximately) equal the mle output
+
+-   Exploratory work
+    -   check all 9C2 pairs (0-1 pairs): compare maxent and empirical
+    -   disease id: 49, 53, 98 + any 4th disease with this triplet
+    -   which pairs being on lead to others being on (causality?)
+    -   underlying principles of maxent based optimization
+    -   what is being approximated and how?
+
+- As we add more constraints, the empirical and maxent distributions
+  should get closer (in kl-divergence?). In 50-51 data i.e combined
+  one, keep adding more. Sort of a pay as you go approach.
+ 
+- See what happens to the plot of the aggregated num-diseases.
+
+- Another check for validation. Take a pair of diseases having a
+  higher prevalence (like diabetes, hypertension). With them include a
+  third disease say VAR which was not partitioned with either of them.
+  Now take another pair d1,d2. Check whether Pr(dia, hyp, VAR) &gt;
+  Pr(d1, d2, VAR).
+  
+  
+## Open-ended questions
+-   Data sampled: is it biased?
+    -   how to account for the sampling procedure
+    -   MIT work (mentioned by Peter)
+
+-   Model Validation
+    -   distance between distributions (KL-divergence?)
+    -   check whether distance is converging on removing certain feature pairs
 
 
-## Discussions
+--------------------------------------------------------------------------------
+
+# Discussions
 
 ### Fri 28 Sep -- with Hari
 
@@ -96,82 +191,41 @@ Data set discussion:
   dependent on prior knowledge or some lower level biological
   stochastic model
 
+-------------------
 
-### Rough notes
+\newpage 
 
-- Review top-K calculation
+# Report
 
-- As we add more constraints, the empirical and maxent distributions
-  should get closer (in kl-divergence?). In 50-51 data i.e combined
-  one, keep adding more. Sort of a pay as you go approach.
+## Notes for report
 
-- See what happens to the plot of the aggregated num-diseases.
+-   Dealing with data sparsity -- maxent approach
 
-- Another check for validation. Take a pair of diseases having a
-  higher prevalence (like diabetes, hypertension). With them include a
-  third disease say VAR which was not partitioned with either of them.
-  Now take another pair d1,d2. Check whether Pr(dia, hyp, VAR) &gt;
-  Pr(d1, d2, VAR).
+-   entropy estimation topics
+    -   try out other entropy estimators and compare performance
+-   use of L measure -- normalization, top co-variate selection
+    -   selecting the top feature pairs
+-   Partitioning of features into compartments -- transitive closure and
+    connected components in a graph
+    -   approximate partitions
+-   optimization, convex, numerical methods
+    -   iterative scaling vs lbfgsb
+-   Market basket analysis to see relevant diseases
 
-- Do all of these computations in a jupyter notebook so as to separate
-  the code from the exploratory, validation work.
+-   Experiments, Plots etc
 
+-   Contribute to `pyitlib` library (bonus points!)
 
-## Compendium of discussions (things to try!)
+-   New possible insights into the problem
 
-- Approximate partitioning
+\newpage
 
-- Run the maxent on the entire dataset
+# Introduction
+Take from Hari's motivation note
 
-- Clean up the top-k constraints code
-
-- All the extra sanity checks compiled into a ipython notebook
-
--   Final output as a probability distribution
-    -   sanity
-    -   marginals and constraints should (approximately) equal the mle output
-
--   Data filtering: remove redundant features
-    -   either appearing in all or
-    -   use thresholds: gt= 0.99 or lt= 0.01
-
--   Top $k$ feature pair extraction using normalized L-measure
-    -   some better guided way to accomplish that?
-    -   check other exact and approximate methods
-    -   just keep on trying with a higher k
-    -   plot and see elbow
-
--   Approximate partitioning (for top-k feats)
-    -   if exact partitioning is taking long time, making the approximation more
-       robust and generalize
-    -   McCallum paper: piece-wise likelihood method.
-    -   treat everything as independent,  tune the normalization constant
-    - Rank ordering the edges in the partitions
-    - Finding the connected components -- approximate instead of exact computn
-
--   Data sampled: is it biased?
-    -   how to account for the sampling procedure
-    -   MIT work
-
--   Market basket analysis
-    -   sets that have related condition (diabetes, hypertension)
-    -   pivot tables?
-    -   reference: ESL 14.2
-    -   `apriori` function from `mlextend` lib
-    -   bump-hunting?
-
--   Model Validation
-    -   distance between distributions (KL-divergence?)
-    -   check whether distance is converging on removing certain feature pairs
-
--   Exploratory work
-    -   check all 9C2 pairs (0-1 pairs): compare maxent and empirical
-    -   disease id: 49, 53, 98 + any 4th disease with this triplet
-    -   which pairs being on lead to others being on (causality?)
-    -   underlying principles of maxent based optimization
-    -   what is being approximated and how?
-
--   Compute the transition probabilities between ages
-    -   refer to the last page of note for details
-    -   something about steady state of markov chain.
+# Related Work
+# Method
+# Experiments,
+# Applications
+# Conclusion
 
