@@ -138,6 +138,61 @@ abstract:
 
 # Discussions
 
+
+### Fri 12 Oct -- Hari's office
+
+Discussion:
+- MBA: guiding the constraints for the top pairs (k=1,2,3)
+    - Some diseases disappear when we go from k=1 to k>1
+    - eg: asthama, upper resp disease etc.
+    - mba heuristics and apriori algorithm. Upto k=3 it was exact computation
+    - mba can give higher order constraints to the maxent optimization 
+
+- Check in Excel sheet whether with upper-resp = 1, what diseases co-occur
+  most frequently.
+  
+- Maybe also check with the maxent constraints, with $\delta(x_i , y_j)$ for 
+  that pair and also the L-measure L(X,Y)
+ 
+- From mba, k>3 have low support so enforcing them exactly may lead to 
+  overfitting.
+
+- Try to think about the relation between mba-analysis and the notion of 
+  statistical dependence calculated between 2 rvs through L-measure.
+ 
+- MBA only finds the pairs where there is a strong positive correlation while
+  Lmeasure can find all possibilities. How to modify mba for that?  
+  
+  - Use the notion of bit-flips. For a particular disease, flip its bits while
+    keeping others same and check whether any disease still has high prevelence
+    with it i.e (d_i=1, d_j=1) pairs. But here d_i=1 actually refers to no 
+    presence of the disease due to the bit flips. Maybe through this we can get
+    relations other than just pos-pos
+  
+- Finally, comparison between mba and L-measure. Use only either of them and see
+  the outputs (maybe via plots like previous validation)
+
+
+
+
+
+TODO:
+- Try running on the entire dataset and check time for L_dict calculation
+- With a high K value
+- Separate the feature extraction and the optimization calls. Feature extraction
+    is taking time. So run and store the object which will be used by the 
+    Optimizer class
+- Using numba to speed up the computations? Or some direct vectorized numpy
+    code? Explore options here. Check in the code which values can be cached
+    and are repeated again and again across the loop calls.
+
+Questions:
+- Swarm server access (ask Peter). Just require one node, will be enough.
+- Faster constraint calculation?
+- Rank-ordering edges? -- thresholding the edges on their L(x,y) values
+- McCal paper: how to approximate
+
+
 ### Fri 28 Sep -- with Hari
 
 Self note: 
