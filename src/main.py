@@ -14,15 +14,18 @@ from codebase.optimizer import Optimizer
 # filePath = '../data/Age50_DataExtract_fy.csv'
 filePath = '../data/2010-2014-fy.csv'
 entropy_est = 'JAMES-STEIN'
-k_val = 5
+k_val = 3
 
 data_array = load_disease_data(filePath)
 
 feats = ExtractFeatures(data_array, entropy_est, k_val)
+
 feats.compute_topK_feats_approx()
+
 feats.partition_features()
 
 opt = Optimizer(feats)
+
 soln_opt = opt.solver_optimize()
 
 m1, m2 = opt.compare_marginals()

@@ -7,9 +7,13 @@ from pyitlib import discrete_random_variable as drv
 
 
 """TODO
+- better documentation
+    - give math formulas for the variables defined in the functions
+    - where applicable, explain the code woriking with one line comments
 - improve top-K constraint calculation code?
-- efficient calculation of norm_const?
-- 
+    - through some caching of often used computations?
+    - since this is a one-time computation, it will be helpful
+- approximate the algo for connected components?
 """
 
 class ExtractFeatures(object):
@@ -50,13 +54,20 @@ class ExtractFeatures(object):
         self.feat_partitions = []   
 
 
-    """
-    Function to get the mu values between two discrete features
-    # i and j are the respective feature number i.e ith feature and jth feature
-    # Specifically they are ith and jth columns in the data 2-d array
-    # assuming 0-indexing
-    """
+
     def get_discrete_mu(self, i , j):        
+        """Function to get the mu values between two discrete features
+        i and j are the respective feature number i.e ith feature and jth feature
+        Specifically they are ith and jth columns in the data 2-d array
+        assuming 0-indexing
+
+        Args:
+            i: Feature column number i i.e ith random variable
+            j: Feature column number j i.e jth random variable
+        
+        Returns:
+            mu_sum: The value of the function mu(i,j). Define it here!
+        """
         set_xi = set(self.data_arr[:,i])
         set_yj = set(self.data_arr[:,j])
         mu_sum = 0.0
@@ -75,13 +86,23 @@ class ExtractFeatures(object):
                     mu_sum += add_term
 
         return mu_sum
-
     
-    """
-    Function to compute the normalized L-measure between the all the discrete
-    feature pairs
-    """
+
     def compute_discrete_norm_Lmeasure(self):
+        """Function to compute the normalized L-measure between the all the 
+        discrete feature pairs. The value for all the possible pairs is stored
+        in the L_measures dict. Auxiliary values like the mutual information
+        (I_mutinfo) and mu-values (mu_vals) are also in their respective 
+        dicts for all the possible pairs. 
+
+        This method sets the `feats_pairs_dict` class attribute.
+
+        Args:
+            None
+        
+        Returns:
+            None
+        """
         # TAKE note: the function expects the array to be in a transpose form
         indi_entropies = drv.entropy(self.data_arr.T, estimator=self.ent_estimator)
         num_rand = self.data_arr.shape[1]  # Number of random variables (feature columns)
@@ -109,24 +130,42 @@ class ExtractFeatures(object):
                 I_ij_hat = np.max(I_ij_hat, 0) * 1.0  # Clamp it at zero, convert to float
                 
                 inner_exp_term = (-1.0 * 2 * I_ij_hat) / (1 - float(I_ij_hat) / W_ij_hat)
+                # removing numerical errors by bounding exponent by 0
+                inner_exp_term = max(0, inner_exp_term)
+                
                 L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
                 I_mutinfo[key] = I_ij
                 mu_vals[key] = mu_ij    # Storing for possible future use
+
+                print(key, L_measures[key])
+                print('\n')
         
         self.L_measure_dict = L_measures
         return
 
 
-    """
-    Function to compute the top-K feature pairs and their corresponding values
-    from amongst all the pairs. Approximate computation
-    """
     def compute_topK_feats_approx(self):   
+        """Function to compute the top-K feature pairs and their corresponding 
+        feature assignment from amongst all the pairs. Approximate computation: 
+        Select the top K pairs based on their L_measures values. For each pair 
+        just select the highest scoring feature assignment. Score is calculated
+        by $\delta(x_i, y_j)$. 
+        
+        This method sets the `feats_pairs_dict` class attribute.
+
+        Args:
+            None
+
+        Returns:
+            None 
+        """
 
         # First, run the method for setting the Lmeasures dictionary with 
         # appropriate values.
+        print("Computing the L_measures between the feature pairs")
         self.compute_discrete_norm_Lmeasure()
         
+        print("Sorting the L_measures")
         # This sorted list will also be useful in approximate partitioning 
         # by dropping the lowest L(x,y) pairs of edges in the feat-graph.
         sorted_list = sorted(self.L_measure_dict.items(), 
@@ -140,7 +179,7 @@ class ExtractFeatures(object):
         topK_keys = [item[0] for item in sorted_list[:self.K]]        
         val_dict = {}        
 
-
+        print("Computing the topK pairs")
         # tuple_list = []
         for k_tuple in topK_keys:
             i = k_tuple[0]
@@ -170,16 +209,27 @@ class ExtractFeatures(object):
                     if delta_ij > maxima :
                         maxima = delta_ij
                         val_dict[k_tuple] = (xi, yj)
-
+        print(k_tuple, (xi, yj), maxima)
         self.feats_pairs_dict = val_dict
         # return val_dict     # can comment it out
 
 
-    """
-    Function to compute the top-K feature pairs and their corresponding values
-    from amongst all the pairs. Exact computation
-    """
-    def compute_topK_feats_exact(self):   
+    def compute_topK_feats_exact(self):       
+        """Function to compute the top-K feature pairs and their corresponding 
+        values from amongst all the pairs. Exact computation by sorting through
+        all possible pairs and their feature assignments and selecting only the
+        top K ones. 
+        
+        This method sets/updates the class attribute `feats_pairs_dict`
+
+        Args:
+            None
+        
+        Returns:
+            None
+        """        
+        
+        K = self.K
 
         # First, run the method for setting the Lmeasures dictionary with 
         # appropriate values.
@@ -196,8 +246,12 @@ class ExtractFeatures(object):
         # you will get at least K exact feature pairs (x_i, y_j) from the list.
         # each entry is a tuple of (key, value). We just want the keys
         topK_keys = [item[0] for item in sorted_list[:self.K]]        
-        val_dict = {}        
+        # val_dict = {}        
 
+        # Dict to store scores all combinations of X,Y across the K such pairs
+        # Key = ((X,Y), (xi, yj))
+        # Val = score(xi, yj)
+        all_pairs_dict = {}
 
         # tuple_list = []
         for k_tuple in topK_keys:
@@ -210,37 +264,56 @@ class ExtractFeatures(object):
             # set_yj = set(self.data_arr[:,j])
             set_xi = [0,1]
             set_yj = [0,1]
-
-            # CHOOSING JUST A SINGLE maxima PAIR of values
-            # Can update to include multiple later on
-            maxima = 0.0    
+            
+            # maxima = 0.0    
             for xi in set_xi:
                 for yj in set_yj:
                     b_i = self.data_arr[:,i] == xi
                     b_j = self.data_arr[:,j] == yj
                     n_i = sum(b_i)
                     n_j = sum(b_j)
-                    n_ij = sum(b_i & b_j)
-                    
+                    n_ij = sum(b_i & b_j)                    
                     # print(i,j, xi, yj, n_i, n_j, n_ij)
                     delta_ij = np.abs( (n_ij / self.N) * np.log((n_ij * self.N) / (n_i * n_j)) )
+                    
+                    key = ((i,j), (xi, yj))
+                    val = delta_ij
+                    all_pairs_dict[key] = val
+                    
+                    # if delta_ij > maxima :
+                    #     maxima = delta_ij
+                    #     val_dict[k_tuple] = (xi, yj)
+        
+        topK_list = sorted(all_pairs_dict.items(), 
+                            key=operator.itemgetter(1),
+                            reverse=True)[:K]   # just get the topK max pairs
+        
+        # tup is a tuple of (key, val) from the all_pairs_dict
+        # Set the feats_pair_dict here
+        for tup in topK_list:
+            tmp = tup[0]
+            key, val = tmp[0], tmp[1]
+            self.feats_pairs_dict[key] = val
 
-                    if delta_ij > maxima :
-                        maxima = delta_ij
-                        val_dict[k_tuple] = (xi, yj)
+        # self.feats_pairs_dict = val_dict
+        # return self.feats_pairs_dict
+        return 
 
-        self.feats_pairs_dict = val_dict
-        # return val_dict     # can comment it out
-
-
-
-
-    """
-    # Function to create a graph out of the feature pairs (constraints)
-    # Two nodes (feature indices) have an edge if they appear in a 
-    # constraint together 
-    """
+   
     def create_partition_graph(self):
+        """Function to create a graph out of the feature pairs (constraints)
+        Two nodes (feature indices) have an edge between them if they appear in 
+        a constraint together. The graph is an adjacency list representation
+        stored in the graph dictionary.
+        
+        This method sets the class attribute `feat_graph` to the graph dict
+
+        Args: 
+            None
+
+        Returns:
+            None
+        """
         graph = {}  # undirected graph
         num_feats = self.data_arr.shape[1]
 
@@ -248,8 +321,11 @@ class ExtractFeatures(object):
         for i in range(num_feats):
             graph[i] = set()
 
+        print("Creating the feature graph")
         # create adj-list representation of the graph
+        # the key for the dict are the (X,Y) pairs
         for tup in self.feats_pairs_dict:
+            print("Added edge for:", tup)
             graph[tup[0]].add(tup[1])
             graph[tup[1]].add(tup[0])
 
@@ -257,13 +333,67 @@ class ExtractFeatures(object):
         # return graph
     
 
-    """
-    Function to partition the set of features for easier computation
-    Partitoning is equivalent to finding all the connected components in 
-    the undirected graph
-    """
+    def create_partition_graph_approx(self, threshold=0.5):
+        """ Function to create a graph out of the feature pairs (constraints)
+        Two nodes (feature indices) have an edge if they appear in a 
+        constraint together. This is an approximate method where certain 
+        edges between two nodes (i,i) are dropped if their edge-weight falls 
+        below a certain threshold.         
+        Edge-weight is equal to the value L(i,j) i.e how dependent the two 
+        random variables are according to their L measure.
+        This approximate method may be useful when the value for K is very large.
+
+        This method sets the class attribute `feat_graph` to the graph dict
+
+        Args:
+            threshold: Value between 0 and 1 used for dropping the edges. 
+                Default is 0.5
+        
+        Returns: 
+            None
+        """
+        graph = {}  # undirected graph
+        num_feats = self.data_arr.shape[1]
+
+        lms_dict = self.L_measure_dict
+
+        # init for each node an empty set of neighbors
+        for i in range(num_feats):
+            graph[i] = set()
+
+        # create adj-list representation of the graph
+        # the key for the dict are the (X,Y) pairs
+        for tup in self.feats_pairs_dict:
+            val = lms_dict[tup]
+
+            # only add an edge if the value is above the threshold
+            if val >= threshold:
+                graph[tup[0]].add(tup[1])
+                graph[tup[1]].add(tup[0])
+
+        self.feat_graph = graph
+        # return graph    
+
+
     def partition_features(self):        
+        """Function to partition the set of features (for easier computation).
+        Partitoning is equivalent to finding all the connected components in 
+        the undirected graph of the features indices as their nodes.         
+        This method find the partitions as sets of feature indices and stores 
+        them in a list of lists with each inner list storing the indices 
+        corresponding to a particular partition.
+
+        This method sets the class attribute `feats_partitions` which is list of
+        lists containing the partition assignments.
+
+        Args:
+            None
+        
+        Returns:
+            None
+        """
         self.create_partition_graph()
+        print("Partioning the feature graph")
 
         def connected_components(neighbors):
             seen = set()
@@ -279,6 +409,7 @@ class ExtractFeatures(object):
                     yield component(node)
 
         partitions = []
+        print("Finding the connected components")
         for comp in connected_components(self.feat_graph):
             partitions.append(list(comp))
         

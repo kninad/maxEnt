@@ -6,11 +6,14 @@ import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 
 """TODO
-- opt inits improvement?
-- passing other optimizn params for the scipy function 
-- dealing with unconstrained/problematic optimizations
-- explicitly pass the function gradient as instead of approx_grad = True
-    which calcs it numerically.
+- better documentation
+- normalization constant code -- speedups?
+- optimization
+    - opt inits improvement?
+    - passing other optimizn params for the scipy function? 
+    - dealing with unconstrained/problematic optimizations
+    - explicitly pass the function gradient as instead of approx_grad = True
+        which calcs it numerically. (could lead to faster code!)
 """
 
 
@@ -33,11 +36,11 @@ class Optimizer(object):
             graph. Stores the normalization constant for each of partitions (since
             each partition is considered independent of others).
     """
-    # features_object is an object of ExtractFeatures class
+
     def __init__(self, features_object):
-        self.feats_obj = features_object
+        # Init function for the class object
         
-        # Variables to store the output of the optimization process/solver/function
+        self.feats_obj = features_object
         self.opt_sol = None     
         self.norm_z = None
         
@@ -46,7 +49,9 @@ class Optimizer(object):
     # optimization function objective
     
     # could split thetas into marginal and specials
-    def compute_constraint_sum(self, thetas, rvec, partition):    
+    def compute_constraint_sum(self, thetas, rvec, partition):
+        """Function to compute the inner sum of the 
+        """ 
         # print '\n'
         # print partition
         

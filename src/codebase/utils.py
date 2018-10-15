@@ -14,7 +14,6 @@ Functions to deal with specific files
 
 
 
-
 def load_disease_data(filePath):
     """ Creates a numpy array from given csv file
 
@@ -28,7 +27,7 @@ def load_disease_data(filePath):
     Returns:
         A binary (0-1) numpy ndarray with each row corresponding to a particular 
         person's disease prevalence data. 
-"""
+    """
     df = pd.read_csv(filePath)
     tups = [tuple(x) for x in df.values]
     data_arr = np.asarray(tups)
@@ -36,8 +35,6 @@ def load_disease_data(filePath):
     # Map all positive values to 1 since any > 0 indicates the disease
     data_arr[data_arr > 0] = 1
     return data_arr
-
-
 
 
 
@@ -129,8 +126,6 @@ def write_csv_files_2010_14():
     df_merge.to_csv(merge_csv_file, encoding='utf-8', index=False)
 
     return
-
-
 
 
 
