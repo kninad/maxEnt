@@ -52,11 +52,25 @@ class ExtractFeatures(object):
         self.feats_pairs_dict = {}        
         self.feat_graph = {}             
         self.feat_partitions = []   
+        self.count_map = {}
 
+    def compute_binary_counts(self):
+        N, num_rand = self.data_arr.shape
+        counts = defaultdict(int)
+        # set_xi = set([0, 1])
+
+        for i in range(num_rand):
+            n_i_0 = sum(self.data_arr[:,i] == 0)
+            n_i_1 = N - n_i_0
+            counts[(i, 0)] = n_i_0
+            counts[(i, 1)] = n_i_1
+        
+        self.count_map = counts
+        return
 
 
     def get_discrete_mu(self, i , j):        
-        """Function to get the mu values between two discrete features
+        """Function to get the mu values between two discrete BINARY features
         i and j are the respective feature number i.e ith feature and jth feature
         Specifically they are ith and jth columns in the data 2-d array
         assuming 0-indexing
@@ -68,14 +82,26 @@ class ExtractFeatures(object):
         Returns:
             mu_sum: The value of the function mu(i,j). Define it here!
         """
-        set_xi = set(self.data_arr[:,i])
-        set_yj = set(self.data_arr[:,j])
+        # set_xi = set(self.data_arr[:,i])
+        # set_yj = set(self.data_arr[:,j])
+        
+        # Compute the counts and set the class attribute counts
+        self.compute_binary_counts()
+        counts = self.count_map
+
+        # Since considering binary features for now.
+        set_xi = set([0, 1])
+        set_yj = set([0, 1])
         mu_sum = 0.0
 
         for xi in set_xi:
             for yj in set_yj:
-                n_i = sum(self.data_arr[:,i] == xi)
-                n_j = sum(self.data_arr[:,j] == yj)
+                # This computation can be stored instead of computing it again 
+                # and again
+                # n_i = sum(self.data_arr[:,i] == xi)
+                # n_j = sum(self.data_arr[:,j] == yj)
+                n_i = counts[(i, xi)]
+                n_j = counts[(j, yjs)]
 
                 low = max(0, n_i + n_j - self.N)
                 high = min(n_i, n_j)
@@ -93,8 +119,8 @@ class ExtractFeatures(object):
         discrete feature pairs. The value for all the possible pairs is stored
         in the L_measures dict. Auxiliary values like the mutual information
         (I_mutinfo) and mu-values (mu_vals) are also in their respective 
-        dicts for all the possible pairs. 
-
+        dicts for all the possible pairs.
+        
         This method sets the `feats_pairs_dict` class attribute.
 
         Args:
@@ -165,6 +191,8 @@ class ExtractFeatures(object):
         print("Computing the L_measures between the feature pairs")
         self.compute_discrete_norm_Lmeasure()
         
+        counts = self.count_map
+
         print("Sorting the L_measures")
         # This sorted list will also be useful in approximate partitioning 
         # by dropping the lowest L(x,y) pairs of edges in the feat-graph.
@@ -199,8 +227,10 @@ class ExtractFeatures(object):
                 for yj in set_yj:
                     b_i = self.data_arr[:,i] == xi
                     b_j = self.data_arr[:,j] == yj
-                    n_i = sum(b_i)
-                    n_j = sum(b_j)
+                    # n_i = sum(b_i) # CAN BE pre-fetched
+                    # n_j = sum(b_j) # CAN be pre-fetched
+                    n_i = counts[(i, xi)]
+                    n_j = counts[(j, yj)]
                     n_ij = sum(b_i & b_j)
                     
                     # print(i,j, xi, yj, n_i, n_j, n_ij)
@@ -234,7 +264,8 @@ class ExtractFeatures(object):
         # First, run the method for setting the Lmeasures dictionary with 
         # appropriate values.
         self.compute_discrete_norm_Lmeasure()
-        
+        counts = self.count_map
+
         # This sorted list will also be useful in approximate partitioning 
         # by dropping the lowest L(x,y) pairs of edges in the feat-graph.
         sorted_list = sorted(self.L_measure_dict.items(), 
@@ -270,8 +301,10 @@ class ExtractFeatures(object):
                 for yj in set_yj:
                     b_i = self.data_arr[:,i] == xi
                     b_j = self.data_arr[:,j] == yj
-                    n_i = sum(b_i)
-                    n_j = sum(b_j)
+                    # n_i = sum(b_i)
+                    # n_j = sum(b_j)
+                    n_i = counts[(i, xi)]
+                    n_j = counts[(j, yj)]
                     n_ij = sum(b_i & b_j)                    
                     # print(i,j, xi, yj, n_i, n_j, n_ij)
                     delta_ij = np.abs( (n_ij / self.N) * np.log((n_ij * self.N) / (n_i * n_j)) )

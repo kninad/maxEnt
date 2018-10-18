@@ -19,13 +19,17 @@ k_val = 3
 data_array = load_disease_data(filePath)
 
 feats = ExtractFeatures(data_array, entropy_est, k_val)
-
 feats.compute_topK_feats_approx()
+output_filename1 = "./out/feats_obj1.pk"
+with open(output_filename, wb) as outfile:
+    pickle.dump(feats, outfile)
 
 feats.partition_features()
+output_filename1 = "./out/feats_obj2.pk"
+with open(output_filename2, wb) as outfile:
+    pickle.dump(feats, outfile)
 
 opt = Optimizer(feats)
-
 soln_opt = opt.solver_optimize()
 
 m1, m2 = opt.compare_marginals()

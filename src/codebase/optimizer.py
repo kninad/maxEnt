@@ -50,7 +50,23 @@ class Optimizer(object):
     
     # could split thetas into marginal and specials
     def compute_constraint_sum(self, thetas, rvec, partition):
-        """Function to compute the inner sum of the 
+        """Function to compute the inner sum for a given input vector. 
+        The sum is of the product of the theta (parameter) for a particular
+        constraint and the indicator function for that constraint and hence the
+        sum goes over all the constraints. Note that probability is
+        not calculated here. Just the inner sum that is exponentiated
+        later.
+
+        Args:
+            thetas: list of the maxent paramters
+            
+            rvec: vector to compute the probability for. Note that should be
+            the 'cropped' version of the vector with respect to the partition
+            supplied i.e only those feature indices.
+
+            partition: a list of feature indices indicating that they all belong
+            in a single partition and we only need to consider them for now.
+
         """ 
         # print '\n'
         # print partition
@@ -58,41 +74,44 @@ class Optimizer(object):
         constraint_sum = 0.0
         topK_pairs_dict = self.feats_obj.feats_pairs_dict
 
-        # k is a tuple == feature-pair.
-        # topK_list = [(k,v) for k,v in topK_pairs_dict.items() if (k[0] in partition and k[1] in partition) ]
+        # Extrat the relevant feat-pairs for this partition from the 
+        # global topK_pairs_dict containing all the top-K pairs.
         topK_list = []
-
         for k,v in topK_pairs_dict.items():
-            # print partition, k,v   
+            # k is a tuple == feature-pair.
             condition = k[0] in partition and k[1] in partition
             if condition:
                 topK_list.append((k,v))
         
-        # marginals    
-        # num_feats = len(rvec)
+        # Sanity Checks for the partition and the given vector
         num_feats = len(partition)
         assert len(rvec) == num_feats
         assert len(rvec) == (len(thetas) - len(topK_list))
         
         # CHECKING WITH 1 since BINARY FEATURES
+        # Add up constraint_sum for marginal constraints.
         for i in range(num_feats):
             indicator = 1 if rvec[i] == 1 else 0
             constraint_sum += thetas[i] * indicator
         
-        # this dict is needed since we are given a 'cropped'
-        # vector and hence the indices may not match up
+        # Reverse lookup hashmap for the indices in the partition
+        # Useful to make thetas and the constraint_sum match up consistently
+        # rvec's first index corresponds to the first index in the partition
+        # with respect to the original vector (before cropping it out for the
+        # partiton)
         findpos = {elem:i for i,elem in enumerate(partition)}
         
-        # top K constraints
-        # will not execute if a single feature list
+        # Add up constraint_sum for top-K constraints specific to the partition
+        # will not execute if a single feature list ???
         for j, tup in enumerate(topK_list):
-            key = tup[0]
-            val = tup[1]
+            key = tup[0]  # the feature indices are also a tuple
+            val = tup[1]  # the associated feature value pairs (tuple)
             condition = rvec[findpos[key[0]]] == val[0] and rvec[findpos[key[1]]] == val[1]
             indicator = 1 if condition else 0
-            constraint_sum += thetas[j + num_feats] * indicator
-            # SINCE THETAS IS CONTIGUOUS VECTOR
-            # CAN ALSO BREAK UP THETAS into MARGINAL AND topK CONSTRATINTS    
+            constraint_sum += thetas[num_feats + j] * indicator
+
+        # Thetas is still a contiguous across the marginals and topK constraints
+        # for a given partiton
 
         return constraint_sum
 
@@ -100,6 +119,14 @@ class Optimizer(object):
     # normalization constant Z(theta)
     # assuming binary features for now.
     def binary_norm_Z(self, thetas, partition):
+        """Computes the normalization constant Z(theta) for a given partition
+
+        Args:
+            thetas: The parameters for the given partition
+
+            partition: List of feature indices indicating that they all belong
+            in the same feature-partition.
+        """
         norm_sum = 0.0
         # N = self.feats_obj.N        
         # data_arr = self.feats_obj.data_arr
@@ -108,6 +135,8 @@ class Optimizer(object):
         num_feats = len(partition)
 
         # lst = map(list, itertools.product([0, 1], repeat=n))
+        
+        # Create all permuatations of a vector belonging to that partition
         all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
         
         for vec in all_perms:
@@ -137,6 +166,8 @@ class Optimizer(object):
 
 
     def solver_optimize(self):
+        """Function to perform the optimization
+        """
         parts = self.feats_obj.feat_partitions
         solution = [None for i in parts]
         norm_sol = [None for i in parts]
