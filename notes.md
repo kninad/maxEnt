@@ -33,6 +33,14 @@ abstract:
 
 --------------------------------------------------------------------------------
 
+
+## TODO: 25 OCT
+- Download pickle files -- red + full
+- Highest scoring pairs in full and reduced once again
+- Sanity checks ??  + Plot codes -- high memory usage
+- Approximate inf: Haas paper -- summarize and code it up
+
+
 ## ToDo
 
 - All the sanity checks compiled into a ipython notebook
