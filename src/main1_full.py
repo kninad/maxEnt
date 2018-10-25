@@ -12,6 +12,7 @@ from codebase.utils import load_disease_data
 from codebase.extract_features import ExtractFeatures
 from codebase.optimizer import Optimizer
 
+# filePath = '../data/test1-fy.csv'
 filePath = '../data/2010-2014-fy.csv'
 entropy_est = 'JAMES-STEIN'
 k_val = 60 

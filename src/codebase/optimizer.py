@@ -5,7 +5,8 @@ from collections import defaultdict
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 
-"""TODO
+"""
+TODO:
 - better documentation
 - normalization constant code -- speedups?
 - optimization
@@ -15,7 +16,6 @@ from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
     - explicitly pass the function gradient as instead of approx_grad = True
         which calcs it numerically. (could lead to faster code!)
 """
-
 
 
 class Optimizer(object):

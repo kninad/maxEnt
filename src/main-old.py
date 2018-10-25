@@ -33,9 +33,9 @@ opt = Optimizer(feats)
 soln_opt = opt.solver_optimize()
 
 m1, m2 = opt.compare_marginals()
-c1, c2 = opt.compare_constraints()
-
 print m1, m2
+
+c1, c2 = opt.compare_constraints()
 print c1, c2
 
 

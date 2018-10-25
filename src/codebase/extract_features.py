@@ -55,6 +55,10 @@ class ExtractFeatures(object):
         self.count_map = {}
 
     def compute_binary_counts(self):
+        """
+        Redundant function, used in the normalized L-measure calculation.
+        Ignore it for now.
+        """
         N, num_rand = self.data_arr.shape
         counts = defaultdict(int)
         # set_xi = set([0, 1])
@@ -153,16 +157,17 @@ class ExtractFeatures(object):
                 
                 num = (-2.0 * I_ij * W_ij)
                 den = (W_ij - I_ij)
-                inner_exp_term = num/den                              
+                eps = 1e-9   # epsilon value for denominator
+                inner_exp_term = num/(den + eps)                              
                 # removing numerical errors by upper bounding exponent by 0
                 inner_exp_term = min(0, inner_exp_term)
                 
                 L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
                 I_mutinfo[key] = I_ij                
 
-                print(I_ij, W_ij, num, den)
-                print(key, L_measures[key], inner_exp_term)
-                print('\n')
+                # print(I_ij, W_ij, num, den)
+                # print(key, L_measures[key], inner_exp_term)
+                # print('\n')
 
         
         self.L_measure_dict = L_measures
@@ -250,8 +255,6 @@ class ExtractFeatures(object):
         # self.compute_discrete_norm_Lmeasure() # Only use it for multi-discrete
         self.compute_discrete_Lmeasure() # Use it for binary case
         
-        counts = self.count_map
-
         print("Sorting the L_measures")
         # This sorted list will also be useful in approximate partitioning 
         # by dropping the lowest L(x,y) pairs of edges in the feat-graph.
@@ -337,6 +340,14 @@ class ExtractFeatures(object):
         # return graph
     
 
+
+    """
+    TODO: How to pick a relevant value for the treshold? 0.5 seems like a high 
+            value for tresholding the L_measure value?
+            An efficient way would be to drop the low-scoring ones. Maybe 
+            select the median OR select a given perecentile (from the 
+            sorted top-K list of top L-measures )
+    """
     def create_partition_graph_approx(self, threshold=0.5):
         """ Function to create a graph out of the feature pairs (constraints)
         Two nodes (feature indices) have an edge if they appear in a 
