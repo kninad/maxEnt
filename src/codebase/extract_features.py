@@ -101,7 +101,7 @@ class ExtractFeatures(object):
                 # n_i = sum(self.data_arr[:,i] == xi)
                 # n_j = sum(self.data_arr[:,j] == yj)
                 n_i = counts[(i, xi)]
-                n_j = counts[(j, yjs)]
+                n_j = counts[(j, yj)]
 
                 low = max(0, n_i + n_j - self.N)
                 high = min(n_i, n_j)
@@ -113,6 +113,64 @@ class ExtractFeatures(object):
 
         return mu_sum
     
+
+    
+
+    def compute_discrete_Lmeasure(self):
+        """Function to compute the un-normalized L-measure between the all the 
+        discrete feature pairs. The value for all the possible pairs is stored
+        in the L_measures dict. Auxiliary values like the mutual information
+        (I_mutinfo) are also in their respective dicts for all the possible pairs.        
+        This method sets the `feats_pairs_dict` class attribute.
+
+        Args:
+            None
+        
+        Returns:
+            None
+        """
+        # TAKE note: the function expects the array to be in a transpose form
+        indi_entropies = drv.entropy(self.data_arr.T, estimator=self.ent_estimator)
+        num_rand = self.data_arr.shape[1]  # Number of random variables (feature columns)
+        assert num_rand == len(indi_entropies)
+
+        L_measures = {}     # Dictionary storing the pairwise L-measures
+        I_mutinfo = {}      # Dictionary storing the pairwise mutual information
+        mu_vals = {}        # Dictionary storing the pairwise MU values
+
+        for i in range(num_rand):
+            for j in range(i+1, num_rand):
+                key = (i, j)    # since 0-indexed
+                h_i = indi_entropies[i]
+                h_j = indi_entropies[j]
+    
+                # mu_ij = self.get_discrete_mu(i, j)            
+
+                # Potential error: I_ij may come out negative depending on the estiamtor   
+                I_ij = drv.information_mutual(self.data_arr.T[i], self.data_arr.T[j], estimator=self.ent_estimator)
+                W_ij = min(h_i, h_j)
+                # W_ij_hat = W_ij - mu_ij
+
+                # Potential error: I_ij may come out negative depending on the estiamtor   
+                # I_ij_hat = I_ij - mu_ij
+                # I_ij_hat = np.max(I_ij_hat, 0) * 1.0  # Clamp it at zero, convert to float
+                inner_exp_term = (-1.0 * 2 * I_ij) / (1 - float(I_ij) / W_ij)
+                # inner_exp_term = (-1.0 * 2 * I_ij_hat) / (1 - float(I_ij_hat) / W_ij_hat)
+                
+                # removing numerical errors by bounding exponent by 0
+                inner_exp_term = max(0, inner_exp_term)
+                
+                L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
+                I_mutinfo[key] = I_ij
+                # mu_vals[key] = mu_ij    # Storing for possible future use
+
+                print(key, L_measures[key], I_ij, W_ij)
+                print('\n')
+        
+        # self.L_measure_dict = L_measures
+        self.L_measure_dict = L_measures
+        return
+
 
     def compute_discrete_norm_Lmeasure(self):
         """Function to compute the normalized L-measure between the all the 
@@ -166,11 +224,12 @@ class ExtractFeatures(object):
                 print(key, L_measures[key])
                 print('\n')
         
-        self.L_measure_dict = L_measures
+        # self.L_measure_dict = L_measures
+        self.L_measure_dict = I_mutinfo
         return
 
 
-    def compute_topK_feats_approx(self):   
+    def compute_topK_feats(self):   
         """Function to compute the top-K feature pairs and their corresponding 
         feature assignment from amongst all the pairs. Approximate computation: 
         Select the top K pairs based on their L_measures values. For each pair 
@@ -189,7 +248,8 @@ class ExtractFeatures(object):
         # First, run the method for setting the Lmeasures dictionary with 
         # appropriate values.
         print("Computing the L_measures between the feature pairs")
-        self.compute_discrete_norm_Lmeasure()
+        # self.compute_discrete_norm_Lmeasure()
+        self.compute_discrete_Lmeasure()
         
         counts = self.count_map
 
@@ -242,95 +302,6 @@ class ExtractFeatures(object):
         print(k_tuple, (xi, yj), maxima)
         self.feats_pairs_dict = val_dict
         # return val_dict     # can comment it out
-
-
-    def compute_topK_feats_exact(self):       
-        """Function to compute the top-K feature pairs and their corresponding 
-        values from amongst all the pairs. Exact computation by sorting through
-        all possible pairs and their feature assignments and selecting only the
-        top K ones. 
-        
-        This method sets/updates the class attribute `feats_pairs_dict`
-
-        Args:
-            None
-        
-        Returns:
-            None
-        """        
-        
-        K = self.K
-
-        # First, run the method for setting the Lmeasures dictionary with 
-        # appropriate values.
-        self.compute_discrete_norm_Lmeasure()
-        counts = self.count_map
-
-        # This sorted list will also be useful in approximate partitioning 
-        # by dropping the lowest L(x,y) pairs of edges in the feat-graph.
-        sorted_list = sorted(self.L_measure_dict.items(), 
-                                key=operator.itemgetter(1),
-                                reverse=True)
-
-
-        # Just consider the top-K pairs of features first. This will ensure that
-        # you will get at least K exact feature pairs (x_i, y_j) from the list.
-        # each entry is a tuple of (key, value). We just want the keys
-        topK_keys = [item[0] for item in sorted_list[:self.K]]        
-        # val_dict = {}        
-
-        # Dict to store scores all combinations of X,Y across the K such pairs
-        # Key = ((X,Y), (xi, yj))
-        # Val = score(xi, yj)
-        all_pairs_dict = {}
-
-        # tuple_list = []
-        for k_tuple in topK_keys:
-            i = k_tuple[0]
-            j = k_tuple[1]    
-            
-            # Do this for computing when multi-valued discrete features 
-            # involved. Not needed for binary.
-            # set_xi = set(self.data_arr[:,i])
-            # set_yj = set(self.data_arr[:,j])
-            set_xi = [0,1]
-            set_yj = [0,1]
-            
-            # maxima = 0.0    
-            for xi in set_xi:
-                for yj in set_yj:
-                    b_i = self.data_arr[:,i] == xi
-                    b_j = self.data_arr[:,j] == yj
-                    # n_i = sum(b_i)
-                    # n_j = sum(b_j)
-                    n_i = counts[(i, xi)]
-                    n_j = counts[(j, yj)]
-                    n_ij = sum(b_i & b_j)                    
-                    # print(i,j, xi, yj, n_i, n_j, n_ij)
-                    delta_ij = np.abs( (n_ij / self.N) * np.log((n_ij * self.N) / (n_i * n_j)) )
-                    
-                    key = ((i,j), (xi, yj))
-                    val = delta_ij
-                    all_pairs_dict[key] = val
-                    
-                    # if delta_ij > maxima :
-                    #     maxima = delta_ij
-                    #     val_dict[k_tuple] = (xi, yj)
-        
-        topK_list = sorted(all_pairs_dict.items(), 
-                            key=operator.itemgetter(1),
-                            reverse=True)[:K]   # just get the topK max pairs
-        
-        # tup is a tuple of (key, val) from the all_pairs_dict
-        # Set the feats_pair_dict here
-        for tup in topK_list:
-            tmp = tup[0]
-            key, val = tmp[0], tmp[1]
-            self.feats_pairs_dict[key] = val
-
-        # self.feats_pairs_dict = val_dict
-        # return self.feats_pairs_dict
-        return 
 
    
     def create_partition_graph(self):
