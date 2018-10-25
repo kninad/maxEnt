@@ -1,5 +1,6 @@
 data/*
 misc/*
+out/pickles/*
 *.pdf
 *.pyc
 *.pk
