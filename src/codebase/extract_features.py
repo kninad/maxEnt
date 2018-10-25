@@ -87,7 +87,7 @@ class ExtractFeatures(object):
         
         # Compute the counts and set the class attribute counts
         self.compute_binary_counts()
-        counts = self.count_map
+        # counts = self.count_map
 
         # Since considering binary features for now.
         set_xi = set([0, 1])
@@ -98,10 +98,10 @@ class ExtractFeatures(object):
             for yj in set_yj:
                 # This computation can be stored instead of computing it again 
                 # and again
-                # n_i = sum(self.data_arr[:,i] == xi)
-                # n_j = sum(self.data_arr[:,j] == yj)
-                n_i = counts[(i, xi)]
-                n_j = counts[(j, yj)]
+                n_i = sum(self.data_arr[:,i] == xi)
+                n_j = sum(self.data_arr[:,j] == yj)
+                # n_i = counts[(i, xi)]
+                # n_j = counts[(j, yj)]
 
                 low = max(0, n_i + n_j - self.N)
                 high = min(n_i, n_j)
@@ -131,12 +131,13 @@ class ExtractFeatures(object):
         """
         # TAKE note: the function expects the array to be in a transpose form
         indi_entropies = drv.entropy(self.data_arr.T, estimator=self.ent_estimator)
+        # indi_entropies = drv.entropy(self.data_arr.T)
         num_rand = self.data_arr.shape[1]  # Number of random variables (feature columns)
         assert num_rand == len(indi_entropies)
 
         L_measures = {}     # Dictionary storing the pairwise L-measures
         I_mutinfo = {}      # Dictionary storing the pairwise mutual information
-        mu_vals = {}        # Dictionary storing the pairwise MU values
+        # mu_vals = {}        # Dictionary storing the pairwise MU values
 
         for i in range(num_rand):
             for j in range(i+1, num_rand):
@@ -147,27 +148,23 @@ class ExtractFeatures(object):
                 # mu_ij = self.get_discrete_mu(i, j)            
 
                 # Potential error: I_ij may come out negative depending on the estiamtor   
-                I_ij = drv.information_mutual(self.data_arr.T[i], self.data_arr.T[j], estimator=self.ent_estimator)
+                I_ij = drv.information_mutual(self.data_arr.T[i], self.data_arr.T[j], estimator=self.ent_estimator)                
                 W_ij = min(h_i, h_j)
-                # W_ij_hat = W_ij - mu_ij
-
-                # Potential error: I_ij may come out negative depending on the estiamtor   
-                # I_ij_hat = I_ij - mu_ij
-                # I_ij_hat = np.max(I_ij_hat, 0) * 1.0  # Clamp it at zero, convert to float
-                inner_exp_term = (-1.0 * 2 * I_ij) / (1 - float(I_ij) / W_ij)
-                # inner_exp_term = (-1.0 * 2 * I_ij_hat) / (1 - float(I_ij_hat) / W_ij_hat)
                 
-                # removing numerical errors by bounding exponent by 0
-                inner_exp_term = max(0, inner_exp_term)
+                num = (-2.0 * I_ij * W_ij)
+                den = (W_ij - I_ij)
+                inner_exp_term = num/den                              
+                # removing numerical errors by upper bounding exponent by 0
+                inner_exp_term = min(0, inner_exp_term)
                 
                 L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
-                I_mutinfo[key] = I_ij
-                # mu_vals[key] = mu_ij    # Storing for possible future use
+                I_mutinfo[key] = I_ij                
 
-                print(key, L_measures[key], I_ij, W_ij)
+                print(I_ij, W_ij, num, den)
+                print(key, L_measures[key], inner_exp_term)
                 print('\n')
+
         
-        # self.L_measure_dict = L_measures
         self.L_measure_dict = L_measures
         return
 
@@ -209,23 +206,25 @@ class ExtractFeatures(object):
                 W_ij = min(h_i, h_j)
                 W_ij_hat = W_ij - mu_ij
 
-                # Potential error: I_ij may come out negative depending on the estiamtor   
+                # Potential error: I_ij_hat may come out negative
                 I_ij_hat = I_ij - mu_ij
-                I_ij_hat = np.max(I_ij_hat, 0) * 1.0  # Clamp it at zero, convert to float
-                
-                inner_exp_term = (-1.0 * 2 * I_ij_hat) / (1 - float(I_ij_hat) / W_ij_hat)
+                                
+                num = -2.0 * I_ij_hat * W_ij_hat
+                den = W_ij_hat - I_ij_hat
+                inner_exp_term = num/den                
                 # removing numerical errors by bounding exponent by 0
-                inner_exp_term = max(0, inner_exp_term)
+                inner_exp_term = min(0, inner_exp_term)
                 
                 L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
                 I_mutinfo[key] = I_ij
                 mu_vals[key] = mu_ij    # Storing for possible future use
 
-                print(key, L_measures[key])
+                print(I_ij, I_ij_hat, W_ij, W_ij_hat, mu_ij)
+                print(key, L_measures[key], inner_exp_term)
                 print('\n')
         
         # self.L_measure_dict = L_measures
-        self.L_measure_dict = I_mutinfo
+        self.L_measure_dict = L_measures
         return
 
 
@@ -248,8 +247,8 @@ class ExtractFeatures(object):
         # First, run the method for setting the Lmeasures dictionary with 
         # appropriate values.
         print("Computing the L_measures between the feature pairs")
-        # self.compute_discrete_norm_Lmeasure()
-        self.compute_discrete_Lmeasure()
+        # self.compute_discrete_norm_Lmeasure() # Only use it for multi-discrete
+        self.compute_discrete_Lmeasure() # Use it for binary case
         
         counts = self.count_map
 
@@ -287,10 +286,10 @@ class ExtractFeatures(object):
                 for yj in set_yj:
                     b_i = self.data_arr[:,i] == xi
                     b_j = self.data_arr[:,j] == yj
-                    # n_i = sum(b_i) # CAN BE pre-fetched
-                    # n_j = sum(b_j) # CAN be pre-fetched
-                    n_i = counts[(i, xi)]
-                    n_j = counts[(j, yj)]
+                    n_i = sum(b_i) # CAN BE pre-fetched
+                    n_j = sum(b_j) # CAN be pre-fetched
+                    # n_i = counts[(i, xi)]
+                    # n_j = counts[(j, yj)]
                     n_ij = sum(b_i & b_j)
                     
                     # print(i,j, xi, yj, n_i, n_j, n_ij)
@@ -299,6 +298,7 @@ class ExtractFeatures(object):
                     if delta_ij > maxima :
                         maxima = delta_ij
                         val_dict[k_tuple] = (xi, yj)
+
         print(k_tuple, (xi, yj), maxima)
         self.feats_pairs_dict = val_dict
         # return val_dict     # can comment it out
