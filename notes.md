@@ -21,8 +21,6 @@ abstract:
 
 - Try to work on report/code whenever there is an hour or two gaps
 
-- Since its an I.S, treat its time commitment as equivalent to a course (RL)
-
 - After each meeting a short summary of the points discussed that day should be
   written down with the date along with adding the important things to try in 
   the compendium + todo sections
@@ -35,6 +33,7 @@ abstract:
 
 
 ## TODO: 25 OCT
+- Optimizer: When len(parition=1), just return the maximum likelihood estimate
 - Download pickle files -- red + full
 - Highest scoring pairs in full and reduced once again
 - Sanity checks ??  + Plot codes -- high memory usage
@@ -42,20 +41,10 @@ abstract:
 
 
 ## ToDo
-
 - All the sanity checks compiled into a ipython notebook
-
 - Better documented code
-
-- Run the maxent on the entire dataset -- make it more scalable
-
-- Request swarm-server access from Peter. Just a single node will be enough.
-
-- Review top-K calculation
-
-- Do all of these computations in a jupyter notebook so as to separate
-  the code from the exploratory, validation work.
-  
+- Scalable inference over the graph
+ 
 
 # Compendium of discussions and notes
 
@@ -281,23 +270,31 @@ Data set discussion:
 ## Notes for report
 
 -   Dealing with data sparsity -- maxent approach
+    -   See referred papers in the original document
 
--   entropy estimation topics
-    -   try out other entropy estimators and compare performance
--   use of L measure -- normalization, top co-variate selection
+-   Entropy estimation topics
+    -   Try out other entropy estimators and compare performance
+    -   Analyze how the methods work in practice
+  
+-   Use of L measure -- normalization, top co-variate selection
     -   selecting the top feature pairs
+    -   Compare with I(X,Y) values and notion of statistical dependence
+
 -   Partitioning of features into compartments -- transitive closure and
     connected components in a graph
     -   approximate partitions
--   optimization, convex, numerical methods
+    -   approximate inference over the graph (haas/mc, thresholding edges)
+
+-   Optimization, convex, numerical methods for maxent
     -   iterative scaling vs lbfgsb
+
 -   Market basket analysis to see relevant diseases
 
--   Experiments, Plots etc
+-   Experiments, Plots for validation analysis
+
+-   Document all the code properly and generate doc-file using Doxygen
 
 -   Contribute to `pyitlib` library (bonus points!)
-
--   New possible insights into the problem
 
 \newpage
 
