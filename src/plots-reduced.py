@@ -22,7 +22,7 @@ data_array = load_disease_data(filePath)
 
 #feats = ExtractFeatures(data_array, entropy_est, k_val)
 #feats.compute_topK_feats_approx()
-feat_file = "./out/feats_obj_red.pk"
+feat_file = "../out/pickles/feats_obj_red.pk"
 with open(feat_file, "rb") as rfile:
     feats = pickle.load(rfile)
 
@@ -31,22 +31,32 @@ assert(k_val == feats.K)
 
 #opt = Optimizer(feats)
 #soln_opt = opt.solver_optimize()
-opt_file = "./out/opt_obj_red.pk"
+opt_file = "../out/pickles/opt_obj_red.pk"
 with open(opt_file, "rb") as ofile:
     opt = pickle.load(ofile)
     solun_opt = pickle.load(ofile)
     #optlist = pickle.load(ofile)
+
+
+###############################
+# DANGER CODE BELOW
+# DONOT RUN ON PERSONAL PC
+# WILL EAT UP ALL THE RAM!
+################################
 
 m1, m2 = opt.compare_marginals()
 c1, c2 = opt.compare_constraints()
 print m1, m2
 print c1, c2
 
-#### PLOTS #### 
+#### PLOTS for comparisons #### 
 num_feats = data_array.shape[1]
-all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
+
+all_perms = itertools.product([0, 1], repeat=num_feats)
 mxt_prob = np.zeros(num_feats)
-for vec in all_perms:
+
+for tvec in all_perms:
+    vec = np.asarray(tvec)
     for j in range(num_feats):
         if sum(vec) == j:
             mxt_prob[j] += opt.prob_dist(vec)            
@@ -73,10 +83,10 @@ plt.plot(xvec, emp_prob, 'ro')  # empirical
 plt.plot(xvec, mxt_prob, 'bo')  # maxent
 plt.xticks(x_ticks)
 plt.axis(plot_lims)
-plt.savefig('./out/newplots/plot-reduced-fy-' + str(k_val) + '.png')
+plt.savefig('../out/newplots/plot-reduced-fy-' + str(k_val) + '.png')
 
 
-# Difference Plot
+# # Difference Plot
 xvec = [i+1 for i in range(num_feats)]
 x_ticks = np.arange(0, num_feats+2, 1.0)
 plot_lims = [0,  num_feats+2, -0.5, 0.5]
@@ -86,6 +96,4 @@ plt.figure()
 plt.plot(xvec, diff_vec, 'go')
 plt.xticks(x_ticks)
 plt.axis(plot_lims)
-plt.savefig('./out/newplots/plot-reduced-fy-' + str(k_val) + '.png')
-
-
+plt.savefig('../out/newplots/plot-reduced-fy-diff' + str(k_val) + '.png')

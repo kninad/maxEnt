@@ -22,7 +22,7 @@ feats = ExtractFeatures(data_array, entropy_est, k_val)
 feats.compute_topK_feats_approx()
 feats.partition_features()
 
-output_filename = "./out/feats_obj_full.pk"
+output_filename = "../out/pickles/feats_obj_full.pk"
 with open(output_filename, 'wb') as outfile:
     pickle.dump(feats, outfile)
 

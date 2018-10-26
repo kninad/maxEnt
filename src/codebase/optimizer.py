@@ -46,8 +46,7 @@ class Optimizer(object):
         
 
     # This function computes the inner sum of the 
-    # optimization function objective
-    
+    # optimization function objective    
     # could split thetas into marginal and specials
     def compute_constraint_sum(self, thetas, rvec, partition):
         """Function to compute the inner sum for a given input vector. 
@@ -89,7 +88,7 @@ class Optimizer(object):
         assert len(rvec) == (len(thetas) - len(topK_list))
         
         # CHECKING WITH 1 since BINARY FEATURES
-        # Add up constraint_sum for marginal constraints.
+        # Add up constraint_sum for MARGINAL constraints.
         for i in range(num_feats):
             indicator = 1 if rvec[i] == 1 else 0
             constraint_sum += thetas[i] * indicator
@@ -137,32 +136,15 @@ class Optimizer(object):
         # lst = map(list, itertools.product([0, 1], repeat=n))
         
         # Create all permuatations of a vector belonging to that partition
-        all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
-        
+        # IT WILL STORE EVERYTHING IN A LIST!!! VERY BAD CODE
+        # all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
+        all_perms = itertools.product([0, 1], repeat=num_feats)
         for vec in all_perms:
-            tmp = self.compute_constraint_sum(thetas, vec, partition)
+            tmpvec = np.asarray(vec)
+            tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
             norm_sum += np.exp(tmp)
 
         return norm_sum
-
-
-    # Objective for the optimization problem
-    # It is a function of thetas
-    # def func_objective(self, thetas, partition):
-    #     objective_sum = 0.0
-    #     N = self.feats_obj.N        
-    #     data_arr = self.feats_obj.data_arr
-
-    #     # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
-    #     for i in range(N):
-    #         rvec = data_arr[i, partition]
-    #         inner_constraint_sum = self.compute_constraint_sum(thetas, rvec, partition)
-    #         objective_sum += inner_constraint_sum
-
-    #     subtraction_term = N * np.log(self.binary_norm_Z(thetas, partition))
-    #     objective_sum -= subtraction_term
-
-    #     return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
 
 
     def solver_optimize(self):
@@ -214,12 +196,16 @@ class Optimizer(object):
 
 
     def prob_dist(self, rvec):
+        """
+        Function to compute the probability for a given input vector
+        """
         
         prob_product = 1.0
         parts = self.feats_obj.feat_partitions
         solution = self.opt_sol
         norm_sol = self.norm_z
 
+        # `partition` will be a set of indices in the i-th parition        
         for i,partition in enumerate(parts):
             tmpvec = rvec[partition]
             term_exp = self.compute_constraint_sum(solution[i][0], tmpvec, partition)
@@ -235,42 +221,49 @@ class Optimizer(object):
         data_arr = self.feats_obj.data_arr
         num_feats = data_arr.shape[1]
         # lst = map(list, itertools.product([0, 1], repeat=n))
-        all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
-        
-        mxt_dict = defaultdict(float)
-        emp_dict = defaultdict(float)
+        # all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
 
-        for vec in all_perms:
+        # all_perms is a generator. So it doesnt store everything in memory all
+        # at once!! Very useful for enumerations like this
+        all_perms = itertools.product([0, 1], repeat=num_feats)
+
+        mxt_probs = np.zeros(num_feats)
+        emp_probs = np.zeros(num_feats)
+
+        for tvec in all_perms:
+            vec = np.asarray(tvec)
             for j in range(num_feats):
                 if vec[j] == 1:
-                    mxt_dict[j] += self.prob_dist(vec)
-        
+                    # mxt_dict[j] += self.prob_dist(vec)
+                    mxt_probs += self.prob_dist(vec)
         
         for vec in data_arr:
-            for j in range(num_feats):
-                if vec[j] == 1:
-                    emp_dict[j] += 1
+            emp_probs += vec
+        
+        # for vec in data_arr:
+        #     for j in range(num_feats):
+        #         if vec[j] == 1:
+        #             # emp_dict[j] += 1
+        #             emp_probs[j] += 1
 
+        emp_probs /= N
 
-        for k in emp_dict:
-            emp_dict[k] /= N
-
-        return mxt_dict, emp_dict
+        return mxt_probs, emp_probs
 
 
     def compare_constraints(self):        
 
         N = self.feats_obj.N        
         data_arr = self.feats_obj.data_arr
-        num_feats = data_arr.shape[1]
-        # lst = map(list, itertools.product([0, 1], repeat=n))
-        all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
-
+        num_feats = data_arr.shape[1]               
+        
+        all_perms = itertools.product([0, 1], repeat=num_feats)
         pair_dict = self.feats_obj.feats_pairs_dict
         mxt_dict = defaultdict(float)
         emp_dict = defaultdict(float)
 
-        for vec in all_perms:
+        for tvec in all_perms:
+            vec = np.asarray(tvec)
             for key,val in pair_dict.items():
                 if vec[key[0]] == val[0] and vec[key[1]] == val[1]:
                     mxt_dict[(key,val)] += self.prob_dist(vec)
@@ -293,10 +286,11 @@ class Optimizer(object):
         # prevalence respectively
         given_rvec = np.append(rv1, rv2)       
         norm_prob = 0   # g_a(r)
-        num_feats2 = len(rv2)
-        rv2_perms = map(np.array, itertools.product([0, 1], repeat=num_feats2))
+        num_feats2 = len(rv2)        
+        rv2_perms = itertools.product([0, 1], repeat=num_feats2)
 
-        for tmp_v2 in rv2_perms:
+        for v2 in rv2_perms:
+            tmp_v2 = np.asarray(v2)
             tmp = np.append(rv1, tmp_v2)
             norm_prob += self.prob_dist(tmp)
         

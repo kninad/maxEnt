@@ -21,14 +21,14 @@ data_array = load_disease_data(filePath)
 #feats.compute_topK_feats_approx()
 #feats.partition_features()
 
-filename = "./out/feats_obj_red.pk"
+filename = "../out/pickles/feats_obj_red.pk"
 with open(filename, 'rb') as rfile:
     feats = pickle.load(rfile)
 
 opt = Optimizer(feats) 
 soln_opt = opt.solver_optimize()
 optlist = [opt, soln_opt]
-outfilename = './out/opt_obj_red.pk'
+outfilename = '../out/pickles/opt_obj_red.pk'
 
 with open(outfilename, "wb") as outfile:
     pickle.dump(opt, outfile)
