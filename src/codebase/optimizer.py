@@ -71,7 +71,7 @@ class Optimizer(object):
         # print partition
         
         constraint_sum = 0.0
-        topK_pairs_dict = self.feats_obj.feats_pairs_dict
+        topK_pairs_dict = self.feats_obj.two_way_dict
 
         # Extrat the relevant feat-pairs for this partition from the 
         # global topK_pairs_dict containing all the top-K pairs.
@@ -156,14 +156,14 @@ class Optimizer(object):
         solution = [None for i in parts]
         norm_sol = [None for i in parts]
 
-        topK_pairs_dict = self.feats_obj.feats_pairs_dict
+        topK_pairs_dict = self.feats_obj.two_way_dict
 
         for i,partition in enumerate(parts):
             length1 = len(partition)
         
             # number of 'extra' constraints for that partition
             length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
-                        if (k[0] in partition and k[1] in partition) ])
+                        if (k[0] in partition and k[1] in partition)])
         
             initial_val = np.random.rand(length1+length2)
 
@@ -260,7 +260,7 @@ class Optimizer(object):
         num_feats = data_arr.shape[1]               
         
         all_perms = itertools.product([0, 1], repeat=num_feats)
-        pair_dict = self.feats_obj.feats_pairs_dict
+        pair_dict = self.feats_obj.two_way_dict
         mxt_dict = defaultdict(float)
         emp_dict = defaultdict(float)
 

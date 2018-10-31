@@ -48,58 +48,24 @@ class ExtractFeatures(object):
         self.N = self.data_arr.shape[0] # Number of training data examples
         
         self.L_measure_dict = {}  
-        self.feats_pairs_dict = {}  
-        self.mba_dict = {}      
+        self.two_way_dict = {}  
+        self.three_way_dict = {}
+        self.four_way_dict = {}
         self.feat_graph = {}             
         self.feat_partitions = []   
 
 
-    def get_discrete_mu(self, i , j):        
-        """Function to get the mu values between two discrete BINARY features
-        i and j are the respective feature number i.e ith feature and jth feature
-        Specifically they are ith and jth columns in the data 2-d array
-        assuming 0-indexing
+    def set_two_way_constraints(self, ext_two_way_dict):
+        self.two_way_dict = ext_two_way_dict
 
-        Args:
-            i: Feature column number i i.e ith random variable
-            j: Feature column number j i.e jth random variable
-        
-        Returns:
-            mu_sum: The value of the function mu(i,j). Define it here!
-        """
-        # set_xi = set(self.data_arr[:,i])
-        # set_yj = set(self.data_arr[:,j])
-        
-        # Compute the counts and set the class attribute counts
-        self.compute_binary_counts()
-        # counts = self.count_map
 
-        # Since considering binary features for now.
-        set_xi = set([0, 1])
-        set_yj = set([0, 1])
-        mu_sum = 0.0
-
-        for xi in set_xi:
-            for yj in set_yj:
-                # This computation can be stored instead of computing it again 
-                # and again
-                n_i = sum(self.data_arr[:,i] == xi)
-                n_j = sum(self.data_arr[:,j] == yj)
-                # n_i = counts[(i, xi)]
-                # n_j = counts[(j, yj)]
-
-                low = max(0, n_i + n_j - self.N)
-                high = min(n_i, n_j)
-
-                for n_ij in range(low + 1, high):
-                    P_nij = ((self.N - n_j) / (n_i - n_ij)) * (n_j / n_ij) * (self.N / n_i)  # TYPO IN FORMULA?
-                    add_term = (n_ij/self.N) * np.log(n_ij * self.N / n_i * n_j) * P_nij
-                    mu_sum += add_term
-
-        return mu_sum
+    def set_three_way_constraints(self, ext_three_way_dict):
+        self.three_way_dict = ext_three_way_dict
     
 
-    
+    def set_four_way_constraints(self, ext_four_way_dict):
+        self.four_way_dict = ext_four_way_dict
+
 
     def compute_discrete_Lmeasure(self):
         """Function to compute the un-normalized L-measure between the all the 
@@ -151,65 +117,6 @@ class ExtractFeatures(object):
                 # print('\n')
 
         
-        self.L_measure_dict = L_measures
-        return
-
-
-    def compute_discrete_norm_Lmeasure(self):
-        """Function to compute the normalized L-measure between the all the 
-        discrete feature pairs. The value for all the possible pairs is stored
-        in the L_measures dict. Auxiliary values like the mutual information
-        (I_mutinfo) and mu-values (mu_vals) are also in their respective 
-        dicts for all the possible pairs.
-        
-        This method sets the `feats_pairs_dict` class attribute.
-
-        Args:
-            None
-        
-        Returns:
-            None
-        """
-        # TAKE note: the function expects the array to be in a transpose form
-        indi_entropies = drv.entropy(self.data_arr.T, estimator=self.ent_estimator)
-        num_rand = self.data_arr.shape[1]  # Number of random variables (feature columns)
-        assert num_rand == len(indi_entropies)
-
-        L_measures = {}     # Dictionary storing the pairwise L-measures
-        I_mutinfo = {}      # Dictionary storing the pairwise mutual information
-        mu_vals = {}        # Dictionary storing the pairwise MU values
-
-        for i in range(num_rand):
-            for j in range(i+1, num_rand):
-                key = (i, j)    # since 0-indexed
-                h_i = indi_entropies[i]
-                h_j = indi_entropies[j]
-    
-                mu_ij = self.get_discrete_mu(i, j)            
-
-                # Potential error: I_ij may come out negative depending on the estiamtor   
-                I_ij = drv.information_mutual(self.data_arr.T[i], self.data_arr.T[j], estimator=self.ent_estimator)
-                W_ij = min(h_i, h_j)
-                W_ij_hat = W_ij - mu_ij
-
-                # Potential error: I_ij_hat may come out negative
-                I_ij_hat = I_ij - mu_ij
-                                
-                num = -2.0 * I_ij_hat * W_ij_hat
-                den = W_ij_hat - I_ij_hat
-                inner_exp_term = num/den                
-                # removing numerical errors by bounding exponent by 0
-                inner_exp_term = min(0, inner_exp_term)
-                
-                L_measures[key] = np.sqrt(1 - np.exp(inner_exp_term))
-                I_mutinfo[key] = I_ij
-                mu_vals[key] = mu_ij    # Storing for possible future use
-
-                print(I_ij, I_ij_hat, W_ij, W_ij_hat, mu_ij)
-                print(key, L_measures[key], inner_exp_term)
-                print('\n')
-        
-        # self.L_measure_dict = L_measures
         self.L_measure_dict = L_measures
         return
 
@@ -285,8 +192,9 @@ class ExtractFeatures(object):
                         val_dict[k_tuple] = (xi, yj)
 
         print(k_tuple, (xi, yj), maxima)
-        self.feats_pairs_dict = val_dict
-        # return val_dict     # can comment it out
+
+        self.set_two_way_constraints(val_dict)
+        # self.two_way_dict = val_dict
 
    
     def create_partition_graph(self):
@@ -313,7 +221,7 @@ class ExtractFeatures(object):
         print("Creating the feature graph")
         # create adj-list representation of the graph
         # the key for the dict are the (X,Y) pairs
-        for tup in self.feats_pairs_dict:
+        for tup in self.two_way_dict:
             print("Added edge for:", tup)
             graph[tup[0]].add(tup[1])
             graph[tup[1]].add(tup[0])
@@ -360,7 +268,7 @@ class ExtractFeatures(object):
 
         # create adj-list representation of the graph
         # the key for the dict are the (X,Y) pairs
-        for tup in self.feats_pairs_dict:
+        for tup in self.two_way_dict:
             val = lms_dict[tup]
 
             # only add an edge if the value is above the threshold
