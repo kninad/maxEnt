@@ -32,18 +32,36 @@ abstract:
 --------------------------------------------------------------------------------
 
 
+## 26 OCT
+- Report top disease pairs, Fixed bugs in L-measure calculation
+- Z or logZ calculation for high-dimensional vectors?
+- Even in PW-method, how is the global normalization constant calculated?
+    - Can we somehow estimate it from the training data?
+    - Should we even bother to calculate it for the global case?
+- No propre way of validating the data, since for the plots have to go 
+    - over all the $2**37$ or $2**254$ combinations of vectors.
+
+
 ## TODO: 25 OCT
-- Optimizer: When len(parition=1), just return the maximum likelihood estimate
-- Download pickle files -- red + full
-- Highest scoring pairs in full and reduced once again
-- Sanity checks ??  + Plot codes -- high memory usage
+- Optimizer Code: 
+    - When len(parition=1), just return the maximum likelihood estimate
+    - Is the computation of Z(theta) necessary everytime?? in solver
+    - Try out the method of iterative scaling described in Haas paper
+  
+- Highest scoring pairs in full and reduced
+- Dealing with constraints from MBA -- 3 and 4 way constraints.
 - Approximate inf: Haas paper -- summarize and code it up
+    - Check out the other references given in the introductory note
 
 
 ## ToDo
+- Check swarm-code status and download relevant out-files
 - All the sanity checks compiled into a ipython notebook
 - Better documented code
-- Scalable inference over the graph
+- All 254 diseases dictionary mapping to relevant strings (use the 37 already
+   done before for this).
+- Instead of LBFGSB, try to reintroduce the normalization constant 
+- Scalable inference over the graph -- approximate methods
  
 
 # Compendium of discussions and notes
@@ -280,6 +298,8 @@ Data set discussion:
     -   selecting the top feature pairs
     -   Compare with I(X,Y) values and notion of statistical dependence
 
+-   Exploratory data analysis part -- PCA, FA, exp-FA on the given dataset.
+ 
 -   Partitioning of features into compartments -- transitive closure and
     connected components in a graph
     -   approximate partitions

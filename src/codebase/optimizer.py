@@ -131,6 +131,7 @@ class Optimizer(object):
         # data_arr = self.feats_obj.data_arr
         
         # num_feats = data_arr.shape[1]
+        # Just iterate over the possible vectors for that partition
         num_feats = len(partition)
 
         # lst = map(list, itertools.product([0, 1], repeat=n))
@@ -149,6 +150,7 @@ class Optimizer(object):
 
     def solver_optimize(self):
         """Function to perform the optimization
+           uses l-bfgsb algorithm from scipy
         """
         parts = self.feats_obj.feat_partitions
         solution = [None for i in parts]
@@ -280,15 +282,15 @@ class Optimizer(object):
         return mxt_dict, emp_dict
 
 
-
     def transition_prob(self, rv1, rv2):
         # rv1 and rv2 are the first and second year's disease 
         # prevalence respectively
         given_rvec = np.append(rv1, rv2)       
         norm_prob = 0   # g_a(r)
         num_feats2 = len(rv2)        
-        rv2_perms = itertools.product([0, 1], repeat=num_feats2)
 
+        # generator/iterator
+        rv2_perms = itertools.product([0, 1], repeat=num_feats2)
         for v2 in rv2_perms:
             tmp_v2 = np.asarray(v2)
             tmp = np.append(rv1, tmp_v2)

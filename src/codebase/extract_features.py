@@ -5,7 +5,6 @@ import numpy as np
 
 from pyitlib import discrete_random_variable as drv
 
-
 """TODO
 - better documentation
     - give math formulas for the variables defined in the functions
@@ -49,28 +48,10 @@ class ExtractFeatures(object):
         self.N = self.data_arr.shape[0] # Number of training data examples
         
         self.L_measure_dict = {}  
-        self.feats_pairs_dict = {}        
+        self.feats_pairs_dict = {}  
+        self.mba_dict = {}      
         self.feat_graph = {}             
         self.feat_partitions = []   
-        self.count_map = {}
-
-    def compute_binary_counts(self):
-        """
-        Redundant function, used in the normalized L-measure calculation.
-        Ignore it for now.
-        """
-        N, num_rand = self.data_arr.shape
-        counts = defaultdict(int)
-        # set_xi = set([0, 1])
-
-        for i in range(num_rand):
-            n_i_0 = sum(self.data_arr[:,i] == 0)
-            n_i_1 = N - n_i_0
-            counts[(i, 0)] = n_i_0
-            counts[(i, 1)] = n_i_1
-        
-        self.count_map = counts
-        return
 
 
     def get_discrete_mu(self, i , j):        
@@ -234,7 +215,7 @@ class ExtractFeatures(object):
 
 
     def compute_topK_feats(self):   
-        """Function to compute the top-K feature pairs and their corresponding 
+        """ Function to compute the top-K feature pairs and their corresponding 
         feature assignment from amongst all the pairs. Approximate computation: 
         Select the top K pairs based on their L_measures values. For each pair 
         just select the highest scoring feature assignment. Score is calculated
@@ -250,9 +231,10 @@ class ExtractFeatures(object):
         """
 
         # First, run the method for setting the Lmeasures dictionary with 
-        # appropriate values.
-        print("Computing the L_measures between the feature pairs")
+        # appropriate values.        
         # self.compute_discrete_norm_Lmeasure() # Only use it for multi-discrete
+        
+        print("Computing the L_measures between the feature pairs")
         self.compute_discrete_Lmeasure() # Use it for binary case
         
         print("Sorting the L_measures")
