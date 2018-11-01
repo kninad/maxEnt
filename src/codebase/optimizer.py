@@ -46,7 +46,7 @@ class Optimizer(object):
         
 
     # Utility function to check whether a tuple (key from constraint dict)
-    # contains all the variables inside the partition.
+    # contains all the variables inside the given partition.
     def check_in_partition(self, partition, key_tuple):
         flag = True
         for i in key_tuple:
@@ -115,9 +115,9 @@ class Optimizer(object):
 
         # Sanity Checks for the partition and the given vector
         num_feats = len(partition)  # number of marginal constraints
-        num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
-        num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
-        num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+        num_2wayc = len([1 for k,v in twoway_dict.items() if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+        num_3wayc = len([1 for k,v in threeway_dict.items() if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+        num_4wayc = len([1 for k,v in fourway_dict.items() if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
         assert len(rvec) == num_feats        
         assert len(thetas) == num_feats + num_2wayc + num_3wayc + num_4wayc
         
