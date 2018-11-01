@@ -67,16 +67,20 @@ class Optimizer(object):
             in a single partition and we only need to consider them for now.
 
         """ 
-        # print '\n'
-        # print partition
-        
-        constraint_sum = 0.0
-        topK_pairs_dict = self.feats_obj.two_way_dict
 
-        # Extrat the relevant feat-pairs for this partition from the 
+        # thetas is ordered as follows: 
+        # (1) all the marginal constraints
+        # (2) all the two-way constraints
+        # (3) all the three-way constraints
+        # (4) all the four-way constraints
+
+        constraint_sum = 0.0
+        twoway_dict = self.feats_obj.two_way_dict
+
+        # Extract the relevant feat-pairs for this partition from the 
         # global topK_pairs_dict containing all the top-K pairs.
         topK_list = []
-        for k,v in topK_pairs_dict.items():
+        for k,v in twoway_dict.items():
             # k is a tuple == feature-pair.
             condition = k[0] in partition and k[1] in partition
             if condition:
@@ -84,8 +88,7 @@ class Optimizer(object):
         
         # Sanity Checks for the partition and the given vector
         num_feats = len(partition)
-        assert len(rvec) == num_feats
-        assert len(rvec) == (len(thetas) - len(topK_list))
+        assert len(rvec) == num_feats        
         
         # CHECKING WITH 1 since BINARY FEATURES
         # Add up constraint_sum for MARGINAL constraints.

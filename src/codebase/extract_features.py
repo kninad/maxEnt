@@ -9,10 +9,6 @@ from pyitlib import discrete_random_variable as drv
 - better documentation
     - give math formulas for the variables defined in the functions
     - where applicable, explain the code woriking with one line comments
-- improve top-K constraint calculation code?
-    - through some caching of often used computations?
-    - since this is a one-time computation, it will be helpful
-- approximate the algo for connected components?
 """
 
 class ExtractFeatures(object):
@@ -196,6 +192,14 @@ class ExtractFeatures(object):
         self.set_two_way_constraints(val_dict)
         # self.two_way_dict = val_dict
 
+
+    def util_add_edges(self, graph, edge_tup):
+        # graph is the dictionary for the partition-graph
+        for t in edge_tup:
+            for t_ot in edge_tup:
+                if t != t_ot:
+                    graph[t].add(t_ot)
+
    
     def create_partition_graph(self):
         """Function to create a graph out of the feature pairs (constraints)
@@ -220,11 +224,27 @@ class ExtractFeatures(object):
 
         print("Creating the feature graph")
         # create adj-list representation of the graph
-        # the key for the dict are the (X,Y) pairs
-        for tup in self.two_way_dict:
-            print("Added edge for:", tup)
-            graph[tup[0]].add(tup[1])
-            graph[tup[1]].add(tup[0])
+        
+        for tup_2way in self.two_way_dict.keys():
+            # Here tup_2way is a tuple of feature indices            
+            print("Added edge for:", tup_2way)
+            self.util_add_edges(graph, tup_2way)
+
+        if len(self.three_way_dict) != 0:
+            for tup_3way in self.three_way_dict.keys():
+                # Here tup_3way is a triplet of feature indices
+                print("Added edge for:", tup_3way)
+                self.util_add_edges(graph, tup_3way)
+        else:
+            print("No 3 way constraints specified")
+
+        if len(self.four_way_dict) != 0:
+            for tup_4way in self.three_way_dict.keys():
+                # Here tup_3way is a triplet of feature indices
+                print("Added edge for:", tup_4way)
+                self.util_add_edges(graph, tup_4way)
+        else:
+            print("No 4 way constraints specified")            
 
         self.feat_graph = graph
         # return graph
