@@ -45,6 +45,17 @@ class Optimizer(object):
         self.norm_z = None
         
 
+    # Utility function to check whether a tuple (key from constraint dict)
+    # contains all the variables inside the partition.
+    def check_in_partition(self, partition, key_tuple):
+        flag = True
+        for i in key_tuple:
+            if i not in partition:
+                flag = False
+                break
+        return flag
+
+
     # This function computes the inner sum of the 
     # optimization function objective    
     # could split thetas into marginal and specials
@@ -75,20 +86,40 @@ class Optimizer(object):
         # (4) all the four-way constraints
 
         constraint_sum = 0.0
-        twoway_dict = self.feats_obj.two_way_dict
 
-        # Extract the relevant feat-pairs for this partition from the 
-        # global topK_pairs_dict containing all the top-K pairs.
-        topK_list = []
-        for k,v in twoway_dict.items():
-            # k is a tuple == feature-pair.
-            condition = k[0] in partition and k[1] in partition
-            if condition:
-                topK_list.append((k,v))
+        twoway_dict = self.feats_obj.two_way_dict
+        threeway_dict = self.feats_obj.three_way_dict
+        fourway_dict = self.feats_obj.four_way_dict
+
+       
+        # # Extract the relevant feat-pairs for this partition from the 
+        # # global topK_pairs_dict containing all the top-K pairs.
+        # twoway_list = []
+        # for k,v in twoway_dict.items():
+        #     # k is a tuple == feature-pair.            
+        #     if check_in_partition(partition, k):
+        #         twoway_list.append((k,v))
         
+        # threeway_list = []
+        # for k,v in threeway_dict.items():
+        #     # k is a tuple == feature-pair.            
+        #     if check_in_partition(partition, k):
+        #         threeway_list.append((k,v))
+        
+        # fourway_list = []
+        # for k,v in fourway_dict.items():
+        #     # k is a tuple == feature-pair.            
+        #     if check_in_partition(partition, k):
+        #         fourway_list.append((k,v))
+                
+
         # Sanity Checks for the partition and the given vector
-        num_feats = len(partition)
+        num_feats = len(partition)  # number of marginal constraints
+        num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+        num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+        num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
         assert len(rvec) == num_feats        
+        assert len(thetas) == num_feats + num_2wayc + num_3wayc + num_4wayc
         
         # CHECKING WITH 1 since BINARY FEATURES
         # Add up constraint_sum for MARGINAL constraints.
@@ -103,17 +134,51 @@ class Optimizer(object):
         # partiton)
         findpos = {elem:i for i,elem in enumerate(partition)}
         
-        # Add up constraint_sum for top-K constraints specific to the partition
-        # will not execute if a single feature list ???
-        for j, tup in enumerate(topK_list):
-            key = tup[0]  # the feature indices are also a tuple
-            val = tup[1]  # the associated feature value pairs (tuple)
-            condition = rvec[findpos[key[0]]] == val[0] and rvec[findpos[key[1]]] == val[1]
-            indicator = 1 if condition else 0
-            constraint_sum += thetas[num_feats + j] * indicator
+        def check_condition(key, value):
+            # key is a tuple of feature indices
+            # value is their corresponding required values
+            flag = True
+            for i in range(key):
+                if rvec[findpos[key[i]]] != value[i]:
+                    flag = False
+                    break
+            return flag
 
-        # Thetas is still a contiguous across the marginals and topK constraints
-        # for a given partiton
+        # # Add up constraint_sum for top-K constraints specific to the partition        
+        # for j, tup in enumerate(twoway_list):
+        #     key = tup[0]  # the feature indices are also a tuple
+        #     val = tup[1]  # the associated feature value pairs (tuple)
+        #     condition = rvec[findpos[key[0]]] == val[0] and rvec[findpos[key[1]]] == val[1]
+        #     indicator = 1 if condition else 0
+        #     constraint_sum += thetas[num_feats + j] * indicator
+
+        j = 0
+        twoway_offset = num_feats
+        for key,val in twoway_dict.items():
+            if self.check_in_partition(partition, key):                
+                indicator = 1 if check_condition(key, val) else 0
+                constraint_sum += thetas[twoway_offset + j] * indicator
+                j += 1
+
+        j = 0
+        threeway_offset = twoway_offset + num_2wayc
+        for key,val in threeway_dict.items():
+            if self.check_in_partition(partition, key):                
+                indicator = 1 if check_condition(key, val) else 0
+                constraint_sum += thetas[threeway_offset + j] * indicator
+                j += 1
+
+        j = 0
+        fourway_offset = threeway_offset + num_3wayc
+        for key,val in fourway_dict.items():
+            if self.check_in_partition(partition, key):                
+                indicator = 1 if check_condition(key, val) else 0
+                constraint_sum += thetas[fourway_offset + j] * indicator
+                j += 1
+
+
+        # Thetas is still a contiguous across the marginals and the 2way, 3way
+        # and the 4way constraints for a given partiton
 
         return constraint_sum
 
@@ -159,16 +224,24 @@ class Optimizer(object):
         solution = [None for i in parts]
         norm_sol = [None for i in parts]
 
-        topK_pairs_dict = self.feats_obj.two_way_dict
+        twoway_dict = self.feats_obj.two_way_dict
+        threeway_dict = self.feats_obj.three_way_dict
+        fourway_dict = self.feats_obj.four_way_dict
 
         for i,partition in enumerate(parts):
-            length1 = len(partition)
+
+            num_feats = len(partition)  # number of marginal constraints
+            num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+            num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+            num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+
+            # length1 = len(partition)
         
-            # number of 'extra' constraints for that partition
-            length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
-                        if (k[0] in partition and k[1] in partition)])
-        
-            initial_val = np.random.rand(length1+length2)
+            # # number of 'extra' constraints for that partition
+            # length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
+            #             if (k[0] in partition and k[1] in partition)])
+            theta_len = num_feats + num_2wayc + num_3wayc + num_4wayc
+            initial_val = np.random.rand(theta_len)
 
             def func_objective(thetas):
                 objective_sum = 0.0
