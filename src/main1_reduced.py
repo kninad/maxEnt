@@ -18,7 +18,8 @@ k_val = 20
 
 data_array = load_disease_data(filePath)
 feats = ExtractFeatures(data_array, entropy_est, k_val)
-feats.compute_topK_feats_approx()
+# feats.compute_topK_feats()
+
 feats.partition_features()
 
 output_filename = "../out/pickles/feats_obj_red.pk"
