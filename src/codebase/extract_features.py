@@ -188,9 +188,11 @@ class ExtractFeatures(object):
                         val_dict[k_tuple] = (xi, yj)
 
         print(k_tuple, (xi, yj), maxima)
-
-        self.set_two_way_constraints(val_dict)
+        
+        # set the two_way_dict to the val dict
         # self.two_way_dict = val_dict
+        self.set_two_way_constraints(val_dict)
+        
 
 
     def util_add_edges(self, graph, edge_tup):

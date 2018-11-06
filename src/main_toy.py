@@ -5,38 +5,31 @@ import itertools
 from matplotlib import pyplot as plt
 
 import sys
-path_to_codebase = '/mnt/Study/umass/sem3/maxEnt/src/codebase/'
+#path_to_codebase = '/mnt/Study/umass/sem3/maxEnt/src/codebase/'
+path_to_codebase = './codebase/'
 sys.path.insert(0, path_to_codebase)
 from codebase.utils import load_disease_data
 from codebase.extract_features import ExtractFeatures
 from codebase.optimizer import Optimizer
 
-# filePath = '../data/Age50_DataExtract_fy.csv'
-filePath = '../data/2010-2014-fy.csv'
-entropy_est = 'JAMES-STEIN'
-k_val = 50 
+filePath = '../data/Age50_DataExtract_fy.csv'
+# filePath = '../data/2010-2014-fy.csv'
+# filePath = '../data/test1-fy.csv'
+
+entropy_estimator = 'JAMES-STEIN'
+k_val = 20
 
 data_array = load_disease_data(filePath)
-
-feats = ExtractFeatures(data_array, entropy_est, k_val)
-feats.compute_topK_feats_approx()
-output_filename1 = "./out/feats_obj1.pk"
-with open(output_filename, wb) as outfile:
-    pickle.dump(feats, outfile)
-
+feats = ExtractFeatures(data_array, entropy_estimator, k_val)
+feats.compute_topK_feats()
 feats.partition_features()
-output_filename1 = "./out/feats_obj2.pk"
-with open(output_filename2, wb) as outfile:
-    pickle.dump(feats, outfile)
 
-opt = Optimizer(feats)
+# featFile = '../out/feats_obj_red.pk'
+# with open(featFile, "rb") as rfile:
+#     feats = pickle.load(rfile)
+
+opt = Optimizer(feats) 
 soln_opt = opt.solver_optimize()
-
-m1, m2 = opt.compare_marginals()
-print m1, m2
-
-c1, c2 = opt.compare_constraints()
-print c1, c2
 
 
 #### PLOTS #### 
@@ -72,8 +65,10 @@ plt.plot(xvec, mxt_prob, 'bo')  # maxent
 plt.xticks(x_ticks)
 plt.axis(plot_lims)
 
-plt.savefig('./p3_1yr_' + str(k_val) + '.png')
-# plt.savefig('./p3_merge_' + str(k_val) + '.png')
+# plt.savefig('../out/brute_p3_1yr_' + str(k_val) + '.png')
+plt.savefig('../out/montecarlo_p3_1yr_' + str(k_val) + '.png')
+
+
 
 # Difference Plot
 xvec = [i+1 for i in range(num_feats)]
@@ -86,6 +81,6 @@ plt.plot(xvec, diff_vec, 'go')
 plt.xticks(x_ticks)
 plt.axis(plot_lims)
 
-plt.savefig('./p4_diff_1yr_' + str(k_val) + '.png')
-
+# plt.savefig('../out/brute_p4_diff_1yr_' + str(k_val) + '.png')
+plt.savefig('../out/montecarlo_p4_diff_1yr_' + str(k_val) + '.png')
 

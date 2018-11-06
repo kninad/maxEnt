@@ -138,7 +138,7 @@ class Optimizer(object):
             # key is a tuple of feature indices
             # value is their corresponding required values
             flag = True
-            for i in range(key):
+            for i in range(len(key)):
                 if rvec[findpos[key[i]]] != value[i]:
                     flag = False
                     break
@@ -194,24 +194,24 @@ class Optimizer(object):
             partition: List of feature indices indicating that they all belong
             in the same feature-partition.
         """
-        norm_sum = 0.0
-        # N = self.feats_obj.N        
-        # data_arr = self.feats_obj.data_arr
-        
-        # num_feats = data_arr.shape[1]
-        # Just iterate over the possible vectors for that partition
+        norm_sum = 0.0       
         num_feats = len(partition)
-
-        # lst = map(list, itertools.product([0, 1], repeat=n))
-        
+       
         # Create all permuatations of a vector belonging to that partition
-        # IT WILL STORE EVERYTHING IN A LIST!!! VERY BAD CODE
-        # all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
-        all_perms = itertools.product([0, 1], repeat=num_feats)
-        for vec in all_perms:
-            tmpvec = np.asarray(vec)
-            tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
-            norm_sum += np.exp(tmp)
+        # all_perms = itertools.product([0, 1], repeat=num_feats)
+        # for vec in all_perms:
+        #     tmpvec = np.asarray(vec)
+        #     tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
+        #     norm_sum += np.exp(tmp)
+        
+        # Monte-Carlo estimate using Importance Sampling over the uniform
+        # distribution
+        frac = (1.0/5)
+        N = int(frac * 2**num_feats)
+        for i in range(N):
+            tmpvec_i = np.random.choice([0, 1], size=(num_feats,))
+            norm_sum += self.compute_constraint_sum(thetas, tmpvec_i, partition)        
+        norm_sum /= frac
 
         return norm_sum
 

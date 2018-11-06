@@ -31,6 +31,17 @@ abstract:
 
 --------------------------------------------------------------------------------
 
+## 1 Nov
+
+- When len(partition) == 1, just use the mle estimate from the data
+    - It should speed up the optimization process
+- Now run on all 254 disease dataset
+- Approximate partition by dropping the lowest scoring edges.
+- Creating the validation graphs -- in an approximate manner using monte-carlo
+- Robustness experiments -- k-fold CV, randomly perutrbing the data.
+    - adding robustness by 1. Regularization on the theta parameter.
+    - 2. giving an interval for the constraints instead of exact match.
+
 
 ## 26 OCT
 - Report top disease pairs, Fixed bugs in L-measure calculation
