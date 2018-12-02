@@ -5,6 +5,7 @@ from collections import defaultdict
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 
+
 """
 TODO:
 - better documentation
@@ -44,6 +45,7 @@ class Optimizer(object):
         self.opt_sol = None     
         self.norm_z = None
         
+        
 
     # Utility function to check whether a tuple (key from constraint dict)
     # contains all the variables inside the given partition.
@@ -54,8 +56,8 @@ class Optimizer(object):
                 flag = False
                 break
         return flag
-
-
+    
+    
     # This function computes the inner sum of the 
     # optimization function objective    
     # could split thetas into marginal and specials
@@ -70,7 +72,7 @@ class Optimizer(object):
         Args:
             thetas: list of the maxent paramters
             
-            rvec: vector to compute the probability for. Note that should be
+            rvec: vector to compute the probability for. Note that it should be
             the 'cropped' version of the vector with respect to the partition
             supplied i.e only those feature indices.
 
@@ -85,6 +87,15 @@ class Optimizer(object):
         # (3) all the three-way constraints
         # (4) all the four-way constraints
 
+        # Just the single feature marginal case --> MLE update
+        if len(partition) == 1:
+            constraint_sum = 0.0
+            if rvec[0] == 1:
+                constraint_sum += thetas[0]
+            
+            # print(partition,  constraint_sum)
+            return constraint_sum
+
         constraint_sum = 0.0
 
         twoway_dict = self.feats_obj.two_way_dict
@@ -92,27 +103,6 @@ class Optimizer(object):
         fourway_dict = self.feats_obj.four_way_dict
 
        
-        # # Extract the relevant feat-pairs for this partition from the 
-        # # global topK_pairs_dict containing all the top-K pairs.
-        # twoway_list = []
-        # for k,v in twoway_dict.items():
-        #     # k is a tuple == feature-pair.            
-        #     if check_in_partition(partition, k):
-        #         twoway_list.append((k,v))
-        
-        # threeway_list = []
-        # for k,v in threeway_dict.items():
-        #     # k is a tuple == feature-pair.            
-        #     if check_in_partition(partition, k):
-        #         threeway_list.append((k,v))
-        
-        # fourway_list = []
-        # for k,v in fourway_dict.items():
-        #     # k is a tuple == feature-pair.            
-        #     if check_in_partition(partition, k):
-        #         fourway_list.append((k,v))
-                
-
         # Sanity Checks for the partition and the given vector
         num_feats = len(partition)  # number of marginal constraints
         num_2wayc = len([1 for k,v in twoway_dict.items() if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
@@ -126,6 +116,7 @@ class Optimizer(object):
         for i in range(num_feats):
             indicator = 1 if rvec[i] == 1 else 0
             constraint_sum += thetas[i] * indicator
+            
         
         # Reverse lookup hashmap for the indices in the partition
         # Useful to make thetas and the constraint_sum match up consistently
@@ -143,14 +134,6 @@ class Optimizer(object):
                     flag = False
                     break
             return flag
-
-        # # Add up constraint_sum for top-K constraints specific to the partition        
-        # for j, tup in enumerate(twoway_list):
-        #     key = tup[0]  # the feature indices are also a tuple
-        #     val = tup[1]  # the associated feature value pairs (tuple)
-        #     condition = rvec[findpos[key[0]]] == val[0] and rvec[findpos[key[1]]] == val[1]
-        #     indicator = 1 if condition else 0
-        #     constraint_sum += thetas[num_feats + j] * indicator
 
         j = 0
         twoway_offset = num_feats
@@ -197,21 +180,25 @@ class Optimizer(object):
         norm_sum = 0.0       
         num_feats = len(partition)
        
+        if num_feats == 1:
+            norm_sum = 1 + np.exp(thetas[0])
+            return norm_sum
+
         # Create all permuatations of a vector belonging to that partition
-        # all_perms = itertools.product([0, 1], repeat=num_feats)
-        # for vec in all_perms:
-        #     tmpvec = np.asarray(vec)
-        #     tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
-        #     norm_sum += np.exp(tmp)
+        all_perms = itertools.product([0, 1], repeat=num_feats)
+        for vec in all_perms:
+            tmpvec = np.asarray(vec)
+            tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
+            norm_sum += np.exp(tmp)
         
         # Monte-Carlo estimate using Importance Sampling over the uniform
         # distribution
-        frac = (1.0/5)
-        N = int(frac * 2**num_feats)
-        for i in range(N):
-            tmpvec_i = np.random.choice([0, 1], size=(num_feats,))
-            norm_sum += self.compute_constraint_sum(thetas, tmpvec_i, partition)        
-        norm_sum /= frac
+        # frac = (1.0/5)
+        # N = int(frac * 2**num_feats)
+        # for i in range(N):
+        #     tmpvec_i = np.random.choice([0, 1], size=(num_feats,))
+        #     norm_sum += self.compute_constraint_sum(thetas, tmpvec_i, partition)        
+        # norm_sum /= frac
 
         return norm_sum
 
@@ -230,42 +217,61 @@ class Optimizer(object):
 
         for i,partition in enumerate(parts):
 
-            num_feats = len(partition)  # number of marginal constraints
-            num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
-            num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
-            num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
-
-            # length1 = len(partition)
-        
-            # # number of 'extra' constraints for that partition
-            # length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
-            #             if (k[0] in partition and k[1] in partition)])
-            theta_len = num_feats + num_2wayc + num_3wayc + num_4wayc
-            initial_val = np.random.rand(theta_len)
-
-            def func_objective(thetas):
-                objective_sum = 0.0
-                N = self.feats_obj.N        
+            if len(partition) == 1:                
+                N = self.feats_obj.N
                 data_arr = self.feats_obj.data_arr
+                feat_col = partition[0]
+                mle_count = 0
+                for j in range(N):
+                    rvec = data_arr[j, feat_col]
+                    if rvec == 1:
+                        mle_count += 1
+                mle = (mle_count * 1.0)/N                
+                theta_opt = np.log(mle/(1-mle))                
+                # Storing like this to maintain consistency with other
+                # partitions optimal solutions
+                optimThetas = [theta_opt]
+                solution[i] = [optimThetas]  # conv to list to maintain consistency
+                norm_sol[i] = self.binary_norm_Z(optimThetas, partition)                
+                # print(partition, mle, 1-mle, theta_opt, norm_sol[i])
+            
+            else:           
+                num_feats = len(partition)  # number of marginal constraints
+                num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+                num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+                num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
 
-                # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
-                for i in range(N):
-                    rvec = data_arr[i, partition]
-                    inner_constraint_sum = self.compute_constraint_sum(thetas, rvec, partition)
-                    objective_sum += inner_constraint_sum
+                # length1 = len(partition)
+            
+                # # number of 'extra' constraints for that partition
+                # length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
+                #             if (k[0] in partition and k[1] in partition)])
+                theta_len = num_feats + num_2wayc + num_3wayc + num_4wayc
+                initial_val = np.random.rand(theta_len)
 
-                subtraction_term = N * np.log(self.binary_norm_Z(thetas, partition))
-                objective_sum -= subtraction_term
+                def func_objective(thetas):
+                    objective_sum = 0.0
+                    N = self.feats_obj.N        
+                    data_arr = self.feats_obj.data_arr
 
-                return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
+                    # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
+                    for i in range(N):
+                        rvec = data_arr[i, partition]
+                        inner_constraint_sum = self.compute_constraint_sum(thetas, rvec, partition)
+                        objective_sum += inner_constraint_sum
+
+                    subtraction_term = N * np.log(self.binary_norm_Z(thetas, partition))
+                    objective_sum -= subtraction_term
+
+                    return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
 
 
-            optimThetas = spmin_LBFGSB(func_objective, x0=initial_val,
-                                    fprime=None, approx_grad=True, 
-                                    disp=True)
+                optimThetas = spmin_LBFGSB(func_objective, x0=initial_val,
+                                        fprime=None, approx_grad=True, 
+                                        disp=True)
 
-            solution[i] = optimThetas
-            norm_sol[i] = self.binary_norm_Z(optimThetas[0], partition)
+                solution[i] = optimThetas
+                norm_sol[i] = self.binary_norm_Z(optimThetas[0], partition)
 
         self.opt_sol = solution
         self.norm_z = norm_sol
@@ -371,7 +377,7 @@ class Optimizer(object):
             tmp_v2 = np.asarray(v2)
             tmp = np.append(rv1, tmp_v2)
             norm_prob += self.prob_dist(tmp)
-        
+            
         trans_prob = self.prob_dist(given_rvec)/norm_prob
 
         return trans_prob

@@ -17,7 +17,7 @@ filePath = '../data/Age50_DataExtract_fy.csv'
 # filePath = '../data/test1-fy.csv'
 
 entropy_estimator = 'JAMES-STEIN'
-k_val = 20
+k_val = 4
 
 data_array = load_disease_data(filePath)
 feats = ExtractFeatures(data_array, entropy_estimator, k_val)

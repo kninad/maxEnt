@@ -31,7 +31,59 @@ abstract:
 
 --------------------------------------------------------------------------------
 
-## 1 Nov
+## 30nov 
+
+- creating new data sets by perturbation
+- Reasoning is that a zero in true-data may have a chance of being actually a 1
+- The reverse is very less likely since 1 (i.e being diagnosed with something)
+   will be a 0 (actually not having any disease) with extremely low prob
+
+## 16 nov (self)
+- was dropping na rows entirely -- now mapping to zero and running again
+- reg-papers all have a notion of validation to help pick out the hyperparams
+- just today, re-training exact same code just with data with filledNA.
+- next-exp: reduce number of constraints on k=4 -- DONE
+
+## 9 Nov (meet)
+
+- P_ex(4) is coming out greater than P_ex(3). Ideally it should be the reverse. 
+  - Check whether the extra contribution towards Pex(4) is coming from?
+  - Check whether at least on the constraints specified by mba for k=3 and 4,
+    are we getting the expected P3 > P4. That will mean that the extra mass is
+    coming from outside the constraint part. 
+  - Another possible reason is the we have supplied equal number of constraints
+    i.e 20 for both k=3 and 4 whereas we would expect it to have more number of 
+    constraints. Train with less constraints for k = 4
+
+- DATASET: Dropping NA rows entirely. Instead if a value is missing, just map it
+  to zero. -- retrain using that
+
+- Robustness experiments: 1. normal model
+  2. Reg using prior (from experts)
+  3. Reg using interval constraint
+  - For all the 3 models see their performance on perturbed data
+  - Data pertubation: P(0->1) = p (about 0.9), P(1->0) = eps * p very less.
+  - Comparison plot: Some notion of distance metric, compare marginal performance
+  - Read the three papers involving regularization for looking into how to select
+    the hyper-pararmeters for the regularization. We don't have any notion of
+    train data here.
+
+## 9 Nov (self)
+
+- Recheck whether constraints to full-opt are correct wrt indexing from the full
+  dataset -- WAS INCORRECT!! fix the indexing issue and run it again
+
+- No need to save feats_obj separately in pickle file since its a class level 
+  attribute for the opt_obj. The massive size of the pickle file is likely due 
+  to the features object also storing the full data array with it!
+
+- For better sampling from the distribution (atleast better than uniform), 
+  consider each feature column to be independent binary rv and set the bit=1
+  probability equal to the mle from the data. Now sample from this instead of
+  the uniform to get better estimates of the desired expectation over the dist.
+
+
+## 2 Nov
 
 - When len(partition) == 1, just use the mle estimate from the data
     - It should speed up the optimization process
@@ -41,7 +93,6 @@ abstract:
 - Robustness experiments -- k-fold CV, randomly perutrbing the data.
     - adding robustness by 1. Regularization on the theta parameter.
     - 2. giving an interval for the constraints instead of exact match.
-
 
 ## 26 OCT
 - Report top disease pairs, Fixed bugs in L-measure calculation

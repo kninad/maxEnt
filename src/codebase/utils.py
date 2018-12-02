@@ -13,6 +13,34 @@ Functions to deal with specific files
 """
 
 
+def load_disease_data_perturb(filePath, prob):
+    """ Creates a numpy array from given csv file
+
+    Creates a pandas dataframe from the given csv file and then exports it to 
+    a numpy ndarray. Also perfoms the check where any value > 0 is mapped to 1 
+    since it corresponds to a particular disease being prevalent.
+
+    Args:
+        filePath: Path to the csv file to load the disease data from
+        prob: perturbation probability for 0 to 1
+
+    Returns:
+        A binary (0-1) numpy ndarray with each row corresponding to a particular 
+        person's disease prevalence data. 
+    """
+    df = pd.read_csv(filePath)
+    tups = [tuple(x) for x in df.values]
+    data_arr = np.asarray(tups)
+    # Map all positive values to 1 since any > 0 indicates the disease
+    data_arr[data_arr > 0] = 1
+    
+    p_mat = np.random.random(size=data_arr.shape)
+    p_idx = (p_mat <= prob)
+    data_arr[p_idx] = 1 # If there was 1 prev, no problem, but if there was a 0, map it to 1    
+    
+    return data_arr
+
+
 
 def load_disease_data(filePath):
     """ Creates a numpy array from given csv file

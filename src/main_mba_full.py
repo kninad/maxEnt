@@ -12,9 +12,10 @@ from codebase.utils import load_disease_data
 from codebase.extract_features import ExtractFeatures
 from codebase.optimizer import Optimizer
 
-filePath = '../data/test1-fy.csv'
+# filePath = '../data/test1-fy.csv'
+filePath = '../data/2010-2014-fy.csv'
 entropy_est = 'JAMES-STEIN'
-k_val = 20 
+k_val = 40 
 
 # Creating the 2-way constraint dict from MBA analysis
 two_wayc = {}
@@ -57,14 +58,13 @@ feats.set_three_way_constraints(three_wayc)
 feats.set_four_way_constraints(four_wayc)
 feats.partition_features()
 
+print("Starting the optimizer")
 opt = Optimizer(feats) 
 soln_opt = opt.solver_optimize()
-optlist = [opt, soln_opt]
-outfilename = '../out/pickles/opt_obj_red_mba.pk'
+print("Optimization over")
 
+outfilename = '../out/pickles/obj_full_mba.pk'
 with open(outfilename, "wb") as outfile:
+    pickle.dump(feats, outfile)
     pickle.dump(opt, outfile)
     pickle.dump(soln_opt, outfile)
-    pickle.dump(optlist, outfile)
-
-

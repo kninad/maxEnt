@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-#SBATCH --job-name=nakred
+#SBATCH --job-name=nakfull
 #SBATCH --partition=longq
-#SBATCH --mem=8192
-#SBATCH --time=02-02:30:00
+#SBATCH --mem=4096
+#SBATCH --time=05-02:30:00
 #SBATCH --ntasks=1 
 #SBATCH --cpus-per-task=1
-#SBATCH --output=test2-red.out
-#SBATCH --error=test2-red.err
+#SBATCH --output=test-full.out
+#SBATCH --error=test-full.err
 
 # Log what we're running and where.
 echo $SLURM_JOBID - `hostname` >> ~/slurm-jobs.txt
@@ -25,5 +25,5 @@ export PATH=~/anaconda/bin:$PATH
 #module load cudnn/7.0-cuda_8.0
 
 source activate mxent
-python plots-reduced.py
+python main_mba_full.py
 source deactivate
