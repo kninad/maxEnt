@@ -32,6 +32,8 @@ abstract:
 --------------------------------------------------------------------------------
 
 ## 30nov 
+- error in compare_marginals (even on toy data)
+- this may lead to further downstream errors
 
 - creating new data sets by perturbation
 - Reasoning is that a zero in true-data may have a chance of being actually a 1

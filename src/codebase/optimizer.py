@@ -5,7 +5,6 @@ from collections import defaultdict
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 
-
 """
 TODO:
 - better documentation
@@ -45,7 +44,6 @@ class Optimizer(object):
         self.opt_sol = None     
         self.norm_z = None
         
-        
 
     # Utility function to check whether a tuple (key from constraint dict)
     # contains all the variables inside the given partition.
@@ -56,8 +54,8 @@ class Optimizer(object):
                 flag = False
                 break
         return flag
-    
-    
+
+
     # This function computes the inner sum of the 
     # optimization function objective    
     # could split thetas into marginal and specials
@@ -96,18 +94,18 @@ class Optimizer(object):
             # print(partition,  constraint_sum)
             return constraint_sum
 
+        
         constraint_sum = 0.0
-
         twoway_dict = self.feats_obj.two_way_dict
         threeway_dict = self.feats_obj.three_way_dict
         fourway_dict = self.feats_obj.four_way_dict
-
        
         # Sanity Checks for the partition and the given vector
         num_feats = len(partition)  # number of marginal constraints
         num_2wayc = len([1 for k,v in twoway_dict.items() if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
         num_3wayc = len([1 for k,v in threeway_dict.items() if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
         num_4wayc = len([1 for k,v in fourway_dict.items() if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+        
         assert len(rvec) == num_feats        
         assert len(thetas) == num_feats + num_2wayc + num_3wayc + num_4wayc
         
@@ -116,7 +114,6 @@ class Optimizer(object):
         for i in range(num_feats):
             indicator = 1 if rvec[i] == 1 else 0
             constraint_sum += thetas[i] * indicator
-            
         
         # Reverse lookup hashmap for the indices in the partition
         # Useful to make thetas and the constraint_sum match up consistently
@@ -191,15 +188,6 @@ class Optimizer(object):
             tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
             norm_sum += np.exp(tmp)
         
-        # Monte-Carlo estimate using Importance Sampling over the uniform
-        # distribution
-        # frac = (1.0/5)
-        # N = int(frac * 2**num_feats)
-        # for i in range(N):
-        #     tmpvec_i = np.random.choice([0, 1], size=(num_feats,))
-        #     norm_sum += self.compute_constraint_sum(thetas, tmpvec_i, partition)        
-        # norm_sum /= frac
-
         return norm_sum
 
 
@@ -217,17 +205,20 @@ class Optimizer(object):
 
         for i,partition in enumerate(parts):
 
-            if len(partition) == 1:                
+            if len(partition) == 1:     # just use the MLE          
                 N = self.feats_obj.N
                 data_arr = self.feats_obj.data_arr
                 feat_col = partition[0]
                 mle_count = 0
+
                 for j in range(N):
                     rvec = data_arr[j, feat_col]
                     if rvec == 1:
                         mle_count += 1
+                
                 mle = (mle_count * 1.0)/N                
                 theta_opt = np.log(mle/(1-mle))                
+                
                 # Storing like this to maintain consistency with other
                 # partitions optimal solutions
                 optimThetas = [theta_opt]
@@ -279,24 +270,29 @@ class Optimizer(object):
         return (solution, norm_sol)
 
 
+
+
+
     def prob_dist(self, rvec):
         """
         Function to compute the probability for a given input vector
         """
         
         prob_product = 1.0
+        log_prob = 0.0
         parts = self.feats_obj.feat_partitions
         solution = self.opt_sol
         norm_sol = self.norm_z
 
-        # `partition` will be a set of indices in the i-th parition        
-        for i,partition in enumerate(parts):
+        # partition will be a set of indices in the i-th parition        
+        for i, partition in enumerate(parts):
             tmpvec = rvec[partition]
             term_exp = self.compute_constraint_sum(solution[i][0], tmpvec, partition)
-            prob_part = (1.0/norm_sol[i]) * np.exp(term_exp)
-            prob_product *= prob_part
-
-        return prob_product
+            log_prob += term_exp - np.log(norm_sol[i])            
+            prob_product *= (1.0/norm_sol[i]) * np.exp(term_exp)
+        
+        return np.exp(log_prob)
+        # return prob_product
 
 
     def compare_marginals(self):        
@@ -304,8 +300,6 @@ class Optimizer(object):
         N = self.feats_obj.N        
         data_arr = self.feats_obj.data_arr
         num_feats = data_arr.shape[1]
-        # lst = map(list, itertools.product([0, 1], repeat=n))
-        # all_perms = map(np.array, itertools.product([0, 1], repeat=num_feats))
 
         # all_perms is a generator. So it doesnt store everything in memory all
         # at once!! Very useful for enumerations like this
@@ -319,23 +313,17 @@ class Optimizer(object):
             for j in range(num_feats):
                 if vec[j] == 1:
                     # mxt_dict[j] += self.prob_dist(vec)
-                    mxt_probs += self.prob_dist(vec)
+                    mxt_probs[j] += self.prob_dist(vec)
         
         for vec in data_arr:
             emp_probs += vec
         
-        # for vec in data_arr:
-        #     for j in range(num_feats):
-        #         if vec[j] == 1:
-        #             # emp_dict[j] += 1
-        #             emp_probs[j] += 1
-
         emp_probs /= N
 
         return mxt_probs, emp_probs
 
 
-    def compare_constraints(self):        
+    def compare_constraints_2way(self):        
 
         N = self.feats_obj.N        
         data_arr = self.feats_obj.data_arr
@@ -364,6 +352,65 @@ class Optimizer(object):
         return mxt_dict, emp_dict
 
 
+    def compare_constraints_3way(self):        
+
+        N = self.feats_obj.N        
+        data_arr = self.feats_obj.data_arr
+        num_feats = data_arr.shape[1]               
+        
+        all_perms = itertools.product([0, 1], repeat=num_feats)
+        pair_dict = self.feats_obj.three_way_dict
+        mxt_dict = defaultdict(float)
+        emp_dict = defaultdict(float)
+
+        for tvec in all_perms:
+            vec = np.asarray(tvec)
+            for key, val in pair_dict.items():
+                if vec[key[0]] == val[0] and vec[key[1]] == val[1] and vec[key[2]] == val[2]:
+                    mxt_dict[(key,val)] += self.prob_dist(vec)
+        
+        
+        for vec in data_arr:
+            for key,val in pair_dict.items():
+                if vec[key[0]] == val[0] and vec[key[1]] == val[1] and vec[key[2]] == val[2]:
+                    emp_dict[(key,val)] += 1.0
+
+        for k in emp_dict:
+            emp_dict[k] /= N
+
+        return mxt_dict, emp_dict
+
+
+    def compare_constraints_4way(self):        
+
+        N = self.feats_obj.N        
+        data_arr = self.feats_obj.data_arr
+        num_feats = data_arr.shape[1]               
+        
+        all_perms = itertools.product([0, 1], repeat=num_feats)
+        pair_dict = self.feats_obj.four_way_dict
+        mxt_dict = defaultdict(float)
+        emp_dict = defaultdict(float)
+
+        for tvec in all_perms:
+            vec = np.asarray(tvec)
+            for key, val in pair_dict.items():
+                if vec[key[0]] == val[0] and vec[key[1]] == val[1] and vec[key[2]] == val[2] and vec[key[3]] == val[3]: 
+                    mxt_dict[(key,val)] += self.prob_dist(vec)
+        
+        
+        for vec in data_arr:
+            for key,val in pair_dict.items():
+                if vec[key[0]] == val[0] and vec[key[1]] == val[1] and vec[key[2]] == val[2] and vec[key[3]] == val[3]:
+                    emp_dict[(key,val)] += 1.0
+
+        for k in emp_dict:
+            emp_dict[k] /= N
+
+        return mxt_dict, emp_dict
+
+
+
     def transition_prob(self, rv1, rv2):
         # rv1 and rv2 are the first and second year's disease 
         # prevalence respectively
@@ -377,7 +424,7 @@ class Optimizer(object):
             tmp_v2 = np.asarray(v2)
             tmp = np.append(rv1, tmp_v2)
             norm_prob += self.prob_dist(tmp)
-            
+        
         trans_prob = self.prob_dist(given_rvec)/norm_prob
 
         return trans_prob

@@ -3,11 +3,11 @@
 #SBATCH --job-name=nakred
 #SBATCH --partition=longq
 #SBATCH --mem=4096
-#SBATCH --time=10-02:30:00
+#SBATCH --time=02-02:30:00
 #SBATCH --ntasks=1 
 #SBATCH --cpus-per-task=1
-#SBATCH --output=test-red.out
-#SBATCH --error=test-red.err
+#SBATCH --output=test-red-k.out
+#SBATCH --error=test-red-k.err
 
 # Log what we're running and where.
 echo $SLURM_JOBID - `hostname` >> ~/slurm-jobs.txt
@@ -25,5 +25,5 @@ export PATH=~/anaconda/bin:$PATH
 #module load cudnn/7.0-cuda_8.0
 
 source activate mxent
-python main_mba_red.py
+python main_mba_red_k.py
 source deactivate

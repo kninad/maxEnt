@@ -252,56 +252,6 @@ class ExtractFeatures(object):
         # return graph
     
 
-
-    """
-    TODO: How to pick a relevant value for the treshold? 0.5 seems like a high 
-            value for tresholding the L_measure value?
-            An efficient way would be to drop the low-scoring ones. Maybe 
-            select the median OR select a given perecentile (from the 
-            sorted top-K list of top L-measures )
-    """
-    def create_partition_graph_approx(self, threshold=0.5):
-        """ Function to create a graph out of the feature pairs (constraints)
-        Two nodes (feature indices) have an edge if they appear in a 
-        constraint together. This is an approximate method where certain 
-        edges between two nodes (i,i) are dropped if their edge-weight falls 
-        below a certain threshold.         
-        Edge-weight is equal to the value L(i,j) i.e how dependent the two 
-        random variables are according to their L measure.
-        This approximate method may be useful when the value for K is very large.
-
-        This method sets the class attribute `feat_graph` to the graph dict
-
-        Args:
-            threshold: Value between 0 and 1 used for dropping the edges. 
-                Default is 0.5
-        
-        Returns: 
-            None
-        """
-        graph = {}  # undirected graph
-        num_feats = self.data_arr.shape[1]
-
-        lms_dict = self.L_measure_dict
-
-        # init for each node an empty set of neighbors
-        for i in range(num_feats):
-            graph[i] = set()
-
-        # create adj-list representation of the graph
-        # the key for the dict are the (X,Y) pairs
-        for tup in self.two_way_dict:
-            val = lms_dict[tup]
-
-            # only add an edge if the value is above the threshold
-            if val >= threshold:
-                graph[tup[0]].add(tup[1])
-                graph[tup[1]].add(tup[0])
-
-        self.feat_graph = graph
-        # return graph    
-
-
     def partition_features(self):        
         """Function to partition the set of features (for easier computation).
         Partitoning is equivalent to finding all the connected components in 

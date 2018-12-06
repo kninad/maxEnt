@@ -12,7 +12,6 @@ Data filering - removing redunant features using thresholding
 Functions to deal with specific files
 """
 
-
 def load_disease_data_perturb(filePath, prob):
     """ Creates a numpy array from given csv file
 
