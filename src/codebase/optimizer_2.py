@@ -326,10 +326,8 @@ class Optimizer(object):
 
 
 
-
-    # normalization constant Z(theta)
-    # assuming binary features for now.
-    def log_norm_Z(self, thetas, partition):
+   # assuming binary features for now.
+    def util_constraint_matrix(self, partition):
         """Computes the log of normalization constant Z(theta) for a given partition
         Uses the log-sum-exp trick for numerical stablility
         Args:
@@ -338,15 +336,12 @@ class Optimizer(object):
             partition: List of feature indices indicating that they all belong
             in the same feature-partition.
         """
-        norm_sum = 0.0       
-        num_feats = len(partition)
-       
-        if num_feats == 1:
-            norm_sum = 0.0
-            norm_sum = 1 + np.exp(thetas[0])
-            return np.log(norm_sum)            
-
-        
+        # norm_sum = 0.0       
+        # num_feats = len(partition)       
+        # if num_feats == 1:
+        #     norm_sum = 0.0
+        #     norm_sum = 1 + np.exp(thetas[0])
+        #     return np.log(norm_sum)                   
         
         # thetas is ordered as follows: 
         # (1) all the marginal constraints
@@ -375,7 +370,8 @@ class Optimizer(object):
         # Create all permuatations of a vector belonging to that partition
         all_perms = itertools.product([0, 1], repeat=num_feats)
         num_total_vectors = 2**(num_feats)
-        inner_array = np.zeros(num_total_vectors)
+        constraint_mat = np.zeros((num_total_vectors, len_theta))        
+                
 
         for i, vec in enumerate(all_perms):
             tmpvec = np.asarray(vec)
@@ -383,8 +379,36 @@ class Optimizer(object):
             tmp_arr = self.util_compute_array(tmpvec, partition, twoway_dict, 
                                     threeway_dict, fourway_dict, findpos,
                                     num_feats, num_2wayc, num_3wayc, num_4wayc)
-            a_val = np.dot(tmp_arr, thetas)
-            inner_array[i] = a_val
+            constraint_mat[i,:] = tmp_arr
+        
+        return constraint_mat
+
+
+
+
+    # normalization constant Z(theta)
+    # assuming binary features for now.
+    def log_norm_Z(self, thetas, partition, constraint_mat):
+        """Computes the log of normalization constant Z(theta) for a given partition
+        Uses the log-sum-exp trick for numerical stablility
+        Args:
+            thetas: The parameters for the given partition
+
+            partition: List of feature indices indicating that they all belong
+            in the same feature-partition.
+        """
+        norm_sum = 0.0       
+        num_feats = len(partition)
+       
+        if num_feats == 1:
+            norm_sum = 0.0
+            norm_sum = 1 + np.exp(thetas[0])
+            return np.log(norm_sum)            
+        
+        # Create all permuatations of a vector belonging to that partition
+        all_perms = itertools.product([0, 1], repeat=num_feats)
+        num_total_vectors = 2**(num_feats)
+        inner_array = np.dot(constraint_mat, thetas)
         
         log_norm = 0.0
         a_max = np.max(inner_array)
@@ -466,6 +490,7 @@ class Optimizer(object):
 
 
                 datavec_partition = self.compute_data_stats(partition)
+                c_matrix_partition = self.util_constraint_matrix(partition)
                 len_theta = datavec_partition.shape[0]
                 initial_val = np.random.rand(len_theta)
 
@@ -495,7 +520,7 @@ class Optimizer(object):
                     
                     theta_term = np.dot(datavec_partition, thetas)
                     # norm_term = -1 * N * np.log(self.binary_norm_Z(thetas, partition))                    
-                    norm_term = -1 * N * self.log_norm_Z(thetas, partition)
+                    norm_term = -1 * N * self.log_norm_Z(thetas, partition, c_matrix_partition)
                     objective_sum = theta_term + norm_term
 
                     return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
