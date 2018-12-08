@@ -405,8 +405,6 @@ class Optimizer(object):
             norm_sum = 1 + np.exp(thetas[0])
             return np.log(norm_sum)            
         
-        # Create all permuatations of a vector belonging to that partition
-        all_perms = itertools.product([0, 1], repeat=num_feats)
         num_total_vectors = 2**(num_feats)
         inner_array = np.dot(constraint_mat, thetas)
         
@@ -423,6 +421,7 @@ class Optimizer(object):
 
     # normalization constant Z(theta)
     # assuming binary features for now.
+    # Still KEEP it around for len(part) == 1 case
     def binary_norm_Z(self, thetas, partition):
         """Computes the normalization constant Z(theta) for a given partition
 
@@ -494,18 +493,6 @@ class Optimizer(object):
                 len_theta = datavec_partition.shape[0]
                 initial_val = np.random.rand(len_theta)
 
-                # num_feats = len(partition)  # number of marginal constraints
-                # num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
-                # num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
-                # num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
-
-                # # length1 = len(partition)
-            
-                # # # number of 'extra' constraints for that partition
-                # # length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
-                # #             if (k[0] in partition and k[1] in partition)])
-                # theta_len = num_feats + num_2wayc + num_3wayc + num_4wayc
-                # initial_val = np.random.rand(theta_len)
 
                 def func_objective(thetas):
                     objective_sum = 0.0
@@ -531,7 +518,8 @@ class Optimizer(object):
                                         disp=True)
 
                 solution[i] = optimThetas
-                norm_sol[i] = self.binary_norm_Z(optimThetas[0], partition)
+                # norm_sol[i] = self.binary_norm_Z(optimThetas[0], partition)
+                norm_sol[i] = np.exp(self.log_norm_Z(optimThetas[0], partition, c_matrix_partition))
 
         self.opt_sol = solution
         self.norm_z = norm_sol
