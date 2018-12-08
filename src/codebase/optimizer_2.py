@@ -109,12 +109,7 @@ class Optimizer(object):
         assert len(rvec) == num_feats        
         assert len(thetas) == num_feats + num_2wayc + num_3wayc + num_4wayc
         
-        # CHECKING WITH 1 since BINARY FEATURES
-        # Add up constraint_sum for MARGINAL constraints.
-        for i in range(num_feats):
-            indicator = 1 if rvec[i] == 1 else 0
-            constraint_sum += thetas[i] * indicator
-        
+       
         # Reverse lookup hashmap for the indices in the partition
         # Useful to make thetas and the constraint_sum match up consistently
         # rvec's first index corresponds to the first index in the partition
@@ -132,6 +127,13 @@ class Optimizer(object):
                     break
             return flag
 
+        # CHECKING WITH 1 since BINARY FEATURES
+        # Add up constraint_sum for MARGINAL constraints.
+        for i in range(num_feats):
+            indicator = 1 if rvec[i] == 1 else 0
+            constraint_sum += thetas[i] * indicator
+
+        # 2-way constraints
         j = 0
         twoway_offset = num_feats
         for key,val in twoway_dict.items():
@@ -140,6 +142,7 @@ class Optimizer(object):
                 constraint_sum += thetas[twoway_offset + j] * indicator
                 j += 1
 
+        # 3-way constraints
         j = 0
         threeway_offset = twoway_offset + num_2wayc
         for key,val in threeway_dict.items():
@@ -148,6 +151,7 @@ class Optimizer(object):
                 constraint_sum += thetas[threeway_offset + j] * indicator
                 j += 1
 
+        # 4-way constraints
         j = 0
         fourway_offset = threeway_offset + num_3wayc
         for key,val in fourway_dict.items():
@@ -156,11 +160,174 @@ class Optimizer(object):
                 constraint_sum += thetas[fourway_offset + j] * indicator
                 j += 1
 
-
         # Thetas is still a contiguous across the marginals and the 2way, 3way
         # and the 4way constraints for a given partiton
 
         return constraint_sum
+
+
+
+
+
+    # This function computes the inner sum of the 
+    # optimization function objective    
+    # could split thetas into marginal and specials
+    def compute_data_stats(self, partition):
+        """Function to compute the inner sum for a given input vector. 
+        The sum is of the product of the theta (parameter) for a particular
+        constraint and the indicator function for that constraint and hence the
+        sum goes over all the constraints. Note that probability is
+        not calculated here. Just the inner sum that is exponentiated
+        later.
+
+        Args:
+            thetas: list of the maxent paramters
+            
+            rvec: vector to compute the probability for. Note that it should be
+            the 'cropped' version of the vector with respect to the partition
+            supplied i.e only those feature indices.
+
+            partition: a list of feature indices indicating that they all belong
+            in a single partition and we only need to consider them for now.
+
+        """ 
+
+        # thetas is ordered as follows: 
+        # (1) all the marginal constraints
+        # (2) all the two-way constraints
+        # (3) all the three-way constraints
+        # (4) all the four-way constraints       
+
+        twoway_dict = self.feats_obj.two_way_dict
+        threeway_dict = self.feats_obj.three_way_dict
+        fourway_dict = self.feats_obj.four_way_dict
+       
+        # Sanity Checks for the partition and the given vector
+        num_feats = len(partition)  # number of marginal constraints
+        num_2wayc = len([1 for k,v in twoway_dict.items() if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+        num_3wayc = len([1 for k,v in threeway_dict.items() if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+        num_4wayc = len([1 for k,v in fourway_dict.items() if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+        
+        # assert len(rvec) == num_feats        
+        # assert len(thetas) == num_feats + num_2wayc + num_3wayc + num_4wayc
+        len_theta = num_feats + num_2wayc + num_3wayc + num_4wayc
+        data_stats_vector = np.zeros(len_theta)
+       
+        # Reverse lookup hashmap for the indices in the partition
+        # Useful to make thetas and the constraint_sum match up consistently
+        # rvec's first index corresponds to the first index in the partition
+        # with respect to the original vector (before cropping it out for the
+        # partiton)
+        findpos = {elem:i for i,elem in enumerate(partition)}
+
+        N = self.feats_obj.N        
+        data_arr = self.feats_obj.data_arr        
+        for i in range(N):
+            rvec = data_arr[i, partition]
+            tmp_arr = self.util_compute_array(rvec, partition, twoway_dict, 
+                                    threeway_dict, fourway_dict, findpos,
+                                    num_feats, num_2wayc, num_3wayc, num_4wayc)
+            
+            data_stats_vector += tmp_arr
+
+            # objective_sum += inner_constraint_sum
+        
+        return data_stats_vector
+
+
+
+
+    # This function computes the inner sum of the 
+    # optimization function objective    
+    # could split thetas into marginal and specials
+    def util_compute_array(self, rvec, partition,
+                    twoway_dict, threeway_dict, fourway_dict, findpos,
+                    num_feats, num_2wayc, num_3wayc, num_4wayc):
+        """Function to compute the inner sum for a given input vector. 
+        The sum is of the product of the theta (parameter) for a particular
+        constraint and the indicator function for that constraint and hence the
+        sum goes over all the constraints. Note that probability is
+        not calculated here. Just the inner sum that is exponentiated
+        later.
+
+        Args:
+            thetas: list of the maxent paramters
+            
+            rvec: vector to compute the probability for. Note that it should be
+            the 'cropped' version of the vector with respect to the partition
+            supplied i.e only those feature indices.
+
+            partition: a list of feature indices indicating that they all belong
+            in a single partition and we only need to consider them for now.
+
+        """ 
+
+        # thetas is ordered as follows: 
+        # (1) all the marginal constraints
+        # (2) all the two-way constraints
+        # (3) all the three-way constraints
+        # (4) all the four-way constraints
+
+        # Just the single feature marginal case --> MLE update
+        if len(partition) == 1:
+            return rvec[0]  # only the marginal constraint applies here
+        
+        
+        def check_condition(key, value):
+            # key is a tuple of feature indices
+            # value is their corresponding required values
+            flag = True
+            for i in range(len(key)):
+                if rvec[findpos[key[i]]] != value[i]:
+                    flag = False
+                    break
+            return flag
+
+        len_theta = len_theta = num_feats + num_2wayc + num_3wayc + num_4wayc
+        feat_arr = np.zeros(len_theta)
+
+        # CHECKING WITH 1 since BINARY FEATURES
+        # Add up constraint_sum for MARGINAL constraints.
+        for i in range(num_feats):
+            indicator = 1 if rvec[i] == 1 else 0
+            feat_arr[i] = indicator
+            # constraint_sum += thetas[i] * indicator
+
+        # 2-way constraints
+        j = 0
+        twoway_offset = num_feats
+        for key,val in twoway_dict.items():
+            if self.check_in_partition(partition, key):                
+                indicator = 1 if check_condition(key, val) else 0
+                feat_arr[twoway_offset + j] = indicator
+                # constraint_sum += thetas[twoway_offset + j] * indicator
+                j += 1
+
+        # 3-way constraints
+        j = 0
+        threeway_offset = twoway_offset + num_2wayc
+        for key,val in threeway_dict.items():
+            if self.check_in_partition(partition, key):                
+                indicator = 1 if check_condition(key, val) else 0
+                feat_arr[threeway_offset + j] = indicator
+                # constraint_sum += thetas[threeway_offset + j] * indicator
+                j += 1
+
+        # 4-way constraints
+        j = 0
+        fourway_offset = threeway_offset + num_3wayc
+        for key,val in fourway_dict.items():
+            if self.check_in_partition(partition, key):                
+                indicator = 1 if check_condition(key, val) else 0
+                feat_arr[fourway_offset + j] = indicator
+                # constraint_sum += thetas[fourway_offset + j] * indicator
+                j += 1
+
+        # Thetas is still a contiguous across the marginals and the 2way, 3way
+        # and the 4way constraints for a given partiton
+        return feat_arr
+
+
 
 
     # normalization constant Z(theta)
@@ -191,6 +358,8 @@ class Optimizer(object):
         return norm_sum
 
 
+
+
     def solver_optimize(self):
         """Function to perform the optimization
            uses l-bfgsb algorithm from scipy
@@ -203,7 +372,7 @@ class Optimizer(object):
         threeway_dict = self.feats_obj.three_way_dict
         fourway_dict = self.feats_obj.four_way_dict
 
-        for i,partition in enumerate(parts):
+        for i, partition in enumerate(parts):
 
             if len(partition) == 1:     # just use the MLE          
                 N = self.feats_obj.N
@@ -226,33 +395,40 @@ class Optimizer(object):
                 norm_sol[i] = self.binary_norm_Z(optimThetas, partition)                
                 # print(partition, mle, 1-mle, theta_opt, norm_sol[i])
             
-            else:           
-                num_feats = len(partition)  # number of marginal constraints
-                num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
-                num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
-                num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+            else:         
 
-                # length1 = len(partition)
+
+                datavec_partition = self.compute_data_stats(partition)
+                len_theta = datavec_partition.shape[0]
+                initial_val = np.random.rand(len_theta)
+
+                # num_feats = len(partition)  # number of marginal constraints
+                # num_2wayc = len([1 for k in twoway_dict if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+                # num_3wayc = len([1 for k in threeway_dict if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+                # num_4wayc = len([1 for k in fourway_dict if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+
+                # # length1 = len(partition)
             
-                # # number of 'extra' constraints for that partition
-                # length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
-                #             if (k[0] in partition and k[1] in partition)])
-                theta_len = num_feats + num_2wayc + num_3wayc + num_4wayc
-                initial_val = np.random.rand(theta_len)
+                # # # number of 'extra' constraints for that partition
+                # # length2 = len([(k,v) for k,v in topK_pairs_dict.items() 
+                # #             if (k[0] in partition and k[1] in partition)])
+                # theta_len = num_feats + num_2wayc + num_3wayc + num_4wayc
+                # initial_val = np.random.rand(theta_len)
 
                 def func_objective(thetas):
                     objective_sum = 0.0
                     N = self.feats_obj.N        
                     data_arr = self.feats_obj.data_arr
 
-                    # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
-                    for i in range(N):
-                        rvec = data_arr[i, partition]
-                        inner_constraint_sum = self.compute_constraint_sum(thetas, rvec, partition)
-                        objective_sum += inner_constraint_sum
-
-                    subtraction_term = N * np.log(self.binary_norm_Z(thetas, partition))
-                    objective_sum -= subtraction_term
+                    # # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
+                    # for i in range(N):
+                    #     rvec = data_arr[i, partition]
+                    #     inner_constraint_sum = self.compute_constraint_sum(thetas, rvec, partition)
+                    #     objective_sum += inner_constraint_sum
+                    
+                    theta_term = np.dot(datavec_partition, thetas)
+                    norm_term = -1 * N * np.log(self.binary_norm_Z(thetas, partition))                    
+                    objective_sum = theta_term + norm_term
 
                     return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
 

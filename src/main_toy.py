@@ -10,7 +10,8 @@ path_to_codebase = '/mnt/Study/umass/sem3/maxEnt/src/codebase/'
 sys.path.insert(0, path_to_codebase)
 from codebase.utils import load_disease_data
 from codebase.extract_features import ExtractFeatures
-from codebase.optimizer import Optimizer
+# from codebase.optimizer import Optimizer
+from codebase.optimizer_2 import Optimizer
 
 filePath = '../data/Age50_DataExtract_fy.csv'
 # filePath = '../data/2010-2014-fy.csv'
@@ -79,40 +80,36 @@ print e4
 
 #### PLOTS #### 
 
-# num_feats = data_array.shape[1]
-# all_perms = itertools.product([0, 1], repeat=num_feats)
-# mxt_prob = np.zeros(num_feats)
+num_feats = data_array.shape[1]
+all_perms = itertools.product([0, 1], repeat=num_feats)
+total_prob = 0.0    # finally should be very close to 1
+mxt_prob = np.zeros(num_feats + 1)
+for tmp in all_perms:
+    vec = np.asarray(tmp)
+    j = sum(vec)
+    p_vec = opt.prob_dist(vec)
+    total_prob += p_vec
+    mxt_prob[j] += p_vec
 
-# for tmp in all_perms:
-#     vec = np.asarray(tmp)
-#     for j in range(num_feats):
-#         if sum(vec) == j:
-#             mxt_prob[j] += opt.prob_dist(vec)
-#             break
+emp_prob = np.zeros(num_feats + 1)
+for vec in data_array:
+    j = sum(vec)
+    emp_prob[j] += 1
+emp_prob /= data_array.shape[0] # N
 
+print mxt_prob, emp_prob
 
-# emp_prob = np.zeros(num_feats)
-# for vec in data_array:
-#     for j in range(num_feats):
-#         if sum(vec) == j:
-#             emp_prob[j] += 1
-#             break
-
-# emp_prob /= data_array.shape[0] # N
-
-# print mxt_prob, emp_prob
-
-# xvec = [i+1 for i in range(num_feats)]
-# x_ticks = np.arange(0, num_feats+2, 1.0)
-# plot_lims = [0,  num_feats+2, -0.1, 1.0]
-# # Both on same plot
-# plt.figure()
-# plt.plot(xvec, emp_prob, 'ro', label='empirical')  # empirical
-# plt.plot(xvec, mxt_prob, 'bo', label='maxent')  # maxent
-# plt.legend()
-# plt.xticks(x_ticks)
-# plt.axis(plot_lims)
-# plt.savefig('../out/p3_1yr_' + str(k_val) + '.png')
+xvec = [i+1 for i in range(num_feats + 1)]
+x_ticks = np.arange(0, num_feats+2, 1.0)
+plot_lims = [0,  num_feats+2, -0.1, 1.0]
+# Both on same plot
+plt.figure()
+plt.plot(xvec, emp_prob, 'ro', label='empirical')  # empirical
+plt.plot(xvec, mxt_prob, 'bo', label='maxent')  # maxent
+plt.legend()
+plt.xticks(x_ticks)
+plt.axis(plot_lims)
+plt.savefig('../out/p3_1yr_' + str(k_val) + '.png')
 
 
 

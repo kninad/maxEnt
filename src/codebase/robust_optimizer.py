@@ -5,20 +5,13 @@ from collections import defaultdict
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as spmin_LBFGSB
 
+
 """
-TODO:
-- better documentation
-- normalization constant code -- speedups?
-- optimization
-    - opt inits improvement?
-    - passing other optimizn params for the scipy function? 
-    - dealing with unconstrained/problematic optimizations
-    - explicitly pass the function gradient as instead of approx_grad = True
-        which calcs it numerically. (could lead to faster code!)
+- opt steps --- numpy dot products
 """
 
 
-class Optimizer(object):
+class RobustOptimizer(object):
     """ Class summary
     Solves the maximum-entropy optimization problem when given an object
     from the ExtractFeatures class which contains the feature paritions and 
@@ -37,12 +30,13 @@ class Optimizer(object):
             each partition is considered independent of others).
     """
 
-    def __init__(self, features_object):
+    def __init__(self, features_object, lamb):
         # Init function for the class object
         
         self.feats_obj = features_object
         self.opt_sol = None     
         self.norm_z = None
+        self.scaling_factor = lamb
         
 
     # Utility function to check whether a tuple (key from constraint dict)
@@ -246,6 +240,7 @@ class Optimizer(object):
                     data_arr = self.feats_obj.data_arr
 
                     # THIS CAN SPED UP BY EFFICIENT NUMPY OPERATIONS
+                    # GO OVER ALL THE DATA
                     for i in range(N):
                         rvec = data_arr[i, partition]
                         inner_constraint_sum = self.compute_constraint_sum(thetas, rvec, partition)
@@ -253,6 +248,10 @@ class Optimizer(object):
 
                     subtraction_term = N * np.log(self.binary_norm_Z(thetas, partition))
                     objective_sum -= subtraction_term
+
+                    # scaling_factor = 4.0 # make it a float
+                    regularization = np.linalg.norm(thetas, 2) * (1.0/self.scaling_factor)
+                    objective_sum -= regularization
 
                     return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
 
@@ -428,12 +427,3 @@ class Optimizer(object):
         trans_prob = self.prob_dist(given_rvec)/norm_prob
 
         return trans_prob
-
-
-
-
-
-
-
-
-

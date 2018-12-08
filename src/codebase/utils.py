@@ -12,7 +12,7 @@ Data filering - removing redunant features using thresholding
 Functions to deal with specific files
 """
 
-def load_disease_data_perturb(filePath, prob):
+def load_disease_data_perturb(filePath, perturb_prob):
     """ Creates a numpy array from given csv file
 
     Creates a pandas dataframe from the given csv file and then exports it to 
@@ -34,8 +34,8 @@ def load_disease_data_perturb(filePath, prob):
     data_arr[data_arr > 0] = 1
     
     p_mat = np.random.random(size=data_arr.shape)
-    p_idx = (p_mat <= prob)
-    data_arr[p_idx] = 1 # If there was 1 prev, no problem, but if there was a 0, map it to 1    
+    mask_p_idx = (p_mat < perturb_prob)
+    data_arr[mask_p_idx] = 1 # If there was 1 prev, no problem, but if there was a 0, map it to 1    
     
     return data_arr
 
