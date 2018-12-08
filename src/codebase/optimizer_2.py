@@ -167,11 +167,9 @@ class Optimizer(object):
 
 
 
-
-
-    # This function computes the inner sum of the 
-    # optimization function objective    
-    # could split thetas into marginal and specials
+    # This function computes the constraint array    
+    # for the entire dataset. Then that array can 
+    # be used over and over again
     def compute_data_stats(self, partition):
         """Function to compute the inner sum for a given input vector. 
         The sum is of the product of the theta (parameter) for a particular
@@ -236,13 +234,12 @@ class Optimizer(object):
 
 
 
-
-    # This function computes the inner sum of the 
-    # optimization function objective    
-    # could split thetas into marginal and specials
+    # This function computes the constraint array for
+    # a single vector
     def util_compute_array(self, rvec, partition,
                     twoway_dict, threeway_dict, fourway_dict, findpos,
                     num_feats, num_2wayc, num_3wayc, num_4wayc):
+
         """Function to compute the inner sum for a given input vector. 
         The sum is of the product of the theta (parameter) for a particular
         constraint and the indicator function for that constraint and hence the
@@ -326,6 +323,76 @@ class Optimizer(object):
         # Thetas is still a contiguous across the marginals and the 2way, 3way
         # and the 4way constraints for a given partiton
         return feat_arr
+
+
+
+
+    # normalization constant Z(theta)
+    # assuming binary features for now.
+    def log_norm_Z(self, thetas, partition):
+        """Computes the log of normalization constant Z(theta) for a given partition
+        Uses the log-sum-exp trick for numerical stablility
+        Args:
+            thetas: The parameters for the given partition
+
+            partition: List of feature indices indicating that they all belong
+            in the same feature-partition.
+        """
+        norm_sum = 0.0       
+        num_feats = len(partition)
+       
+        if num_feats == 1:
+            norm_sum = 0.0
+            norm_sum = 1 + np.exp(thetas[0])
+            return np.log(norm_sum)            
+
+        
+        
+        # thetas is ordered as follows: 
+        # (1) all the marginal constraints
+        # (2) all the two-way constraints
+        # (3) all the three-way constraints
+        # (4) all the four-way constraints       
+
+        twoway_dict = self.feats_obj.two_way_dict
+        threeway_dict = self.feats_obj.three_way_dict
+        fourway_dict = self.feats_obj.four_way_dict       
+        
+        num_feats = len(partition)  # number of marginal constraints
+        num_2wayc = len([1 for k,v in twoway_dict.items() if self.check_in_partition(partition, k)])  # num of 2way constraints for the partition
+        num_3wayc = len([1 for k,v in threeway_dict.items() if self.check_in_partition(partition, k)]) # num of 3way constraints for the partition
+        num_4wayc = len([1 for k,v in fourway_dict.items() if self.check_in_partition(partition, k)]) # num of 4way constraints for the partition
+        len_theta = num_feats + num_2wayc + num_3wayc + num_4wayc
+        data_stats_vector = np.zeros(len_theta)
+       
+        # Reverse lookup hashmap for the indices in the partition
+        # Useful to make thetas and the constraint_sum match up consistently
+        # rvec's first index corresponds to the first index in the partition
+        # with respect to the original vector (before cropping it out for the
+        # partiton)
+        findpos = {elem:i for i,elem in enumerate(partition)}       
+
+        # Create all permuatations of a vector belonging to that partition
+        all_perms = itertools.product([0, 1], repeat=num_feats)
+        num_total_vectors = 2**(num_feats)
+        inner_array = np.zeros(num_total_vectors)
+
+        for i, vec in enumerate(all_perms):
+            tmpvec = np.asarray(vec)
+            # tmp = self.compute_constraint_sum(thetas, tmpvec, partition)
+            tmp_arr = self.util_compute_array(tmpvec, partition, twoway_dict, 
+                                    threeway_dict, fourway_dict, findpos,
+                                    num_feats, num_2wayc, num_3wayc, num_4wayc)
+            a_val = np.dot(tmp_arr, thetas)
+            inner_array[i] = a_val
+        
+        log_norm = 0.0
+        a_max = np.max(inner_array)
+        inner_array -= a_max
+        log_norm = a_max + np.log(np.sum(np.exp(inner_array)))
+        
+        return log_norm
+
 
 
 
@@ -427,7 +494,8 @@ class Optimizer(object):
                     #     objective_sum += inner_constraint_sum
                     
                     theta_term = np.dot(datavec_partition, thetas)
-                    norm_term = -1 * N * np.log(self.binary_norm_Z(thetas, partition))                    
+                    # norm_term = -1 * N * np.log(self.binary_norm_Z(thetas, partition))                    
+                    norm_term = -1 * N * self.log_norm_Z(thetas, partition)
                     objective_sum = theta_term + norm_term
 
                     return (-1 * objective_sum) # SINCE MINIMIZING IN THE LBFGS SCIPY FUNCTION
